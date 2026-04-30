@@ -88,9 +88,77 @@ const storeItems = [
   },
 ]
 
-const starterCart = [storeItems[0], storeItems[2]]
+const starterCart = []
+const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
+const weekTemplate = [
+  {
+    key: 'mon',
+    label: 'Mon',
+    fullLabel: 'Monday',
+    tasks: [
+      createTask('Math homework', 'check', 1, 18, 10),
+      createTask('Drink water', 'count', 8, 24, 12),
+    ],
+  },
+  {
+    key: 'tue',
+    label: 'Tue',
+    fullLabel: 'Tuesday',
+    tasks: [
+      createTask('Study 45 minutes', 'check', 1, 20, 14),
+      createTask('Pomodoro sessions', 'count', 3, 15, 12),
+    ],
+  },
+  {
+    key: 'wed',
+    label: 'Wed',
+    fullLabel: 'Wednesday',
+    tasks: [createTask('Workout', 'check', 1, 18, 10)],
+  },
+  {
+    key: 'thu',
+    label: 'Thu',
+    fullLabel: 'Thursday',
+    tasks: [createTask('Read chapter notes', 'check', 1, 16, 8)],
+  },
+  {
+    key: 'fri',
+    label: 'Fri',
+    fullLabel: 'Friday',
+    tasks: [createTask('Applications sent', 'count', 2, 24, 16)],
+  },
+  {
+    key: 'sat',
+    label: 'Sat',
+    fullLabel: 'Saturday',
+    tasks: [createTask('Laundry', 'check', 1, 14, 8)],
+  },
+  {
+    key: 'sun',
+    label: 'Sun',
+    fullLabel: 'Sunday',
+    tasks: [createTask('Weekly reset', 'check', 1, 22, 12)],
+  },
+]
+
+function createTask(title, mode, target, coinReward, xpReward) {
+  return {
+    id: `${title}-${mode}-${target}-${coinReward}-${xpReward}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`,
+    title,
+    mode,
+    target,
+    progress: 0,
+    rewarded: false,
+    coinReward,
+    xpReward,
+  }
+}
 
 function App() {
+  const todayKey = dayKeys[new Date().getDay()] ?? 'mon'
   const [authMode, setAuthMode] = useState('login')
   const [hasEntered, setHasEntered] = useState(false)
   const [sessionType, setSessionType] = useState('guest')
@@ -100,7 +168,13 @@ function App() {
   const [notificationFilter, setNotificationFilter] = useState('All')
   const [storeFilter, setStoreFilter] = useState('All')
   const [cart, setCart] = useState(starterCart)
-  const xpBalance = 1500
+  const [coins, setCoins] = useState(1500)
+  const [xp, setXp] = useState(320)
+  const [weekPlan, setWeekPlan] = useState(weekTemplate)
+  const [selectedDay, setSelectedDay] = useState(todayKey)
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskMode, setNewTaskMode] = useState('check')
+  const [newTaskTarget, setNewTaskTarget] = useState(1)
 
   const filteredFriends =
     friendFilter === 'Favorites'
@@ -118,22 +192,125 @@ function App() {
       : storeItems.filter((item) => item.category === storeFilter)
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price, 0)
-
-  const addToCart = (item) => {
-    if (!cart.some((entry) => entry.id === item.id)) {
-      setCart([...cart, item])
-    }
-    setCurrentPage('Store Cart')
-  }
-
-  const removeFromCart = (itemId) => {
-    setCart(cart.filter((item) => item.id !== itemId))
-  }
+  const activeDay =
+    weekPlan.find((day) => day.key === selectedDay) ?? weekPlan[0]
 
   const enterApp = (type) => {
     setSessionType(type)
     setHasEntered(true)
-    setCurrentPage(type === 'guest' ? 'Dashboard' : 'Store')
+    setCurrentPage('Dashboard')
+  }
+
+  const logout = () => {
+    setHasEntered(false)
+    setSessionType('guest')
+    setCurrentPage('Dashboard')
+  }
+
+  const addToCart = (item) => {
+    if (!cart.some((entry) => entry.id === item.id)) {
+      setCart((current) => [...current, item])
+    }
+  }
+
+  const removeFromCart = (itemId) => {
+    setCart((current) => current.filter((item) => item.id !== itemId))
+  }
+
+  const updateTask = (dayKey, taskId, updater) => {
+    let rewardDelta = null
+
+    setWeekPlan((currentWeek) =>
+      currentWeek.map((day) => {
+        if (day.key !== dayKey) {
+          return day
+        }
+
+        return {
+          ...day,
+          tasks: day.tasks.map((task) => {
+            if (task.id !== taskId) {
+              return task
+            }
+
+            const nextTask = updater(task)
+
+            if (!task.rewarded && nextTask.rewarded) {
+              rewardDelta = {
+                coins: nextTask.coinReward,
+                xp: nextTask.xpReward,
+              }
+            }
+
+            return nextTask
+          }),
+        }
+      }),
+    )
+
+    if (rewardDelta) {
+      setCoins((current) => current + rewardDelta.coins)
+      setXp((current) => current + rewardDelta.xp)
+    }
+  }
+
+  const toggleTask = (dayKey, task) => {
+    updateTask(dayKey, task.id, (currentTask) => {
+      const nextProgress = currentTask.progress >= currentTask.target ? 0 : currentTask.target
+
+      return {
+        ...currentTask,
+        progress: nextProgress,
+        rewarded: nextProgress >= currentTask.target ? currentTask.rewarded || true : false,
+      }
+    })
+  }
+
+  const incrementTask = (dayKey, task) => {
+    updateTask(dayKey, task.id, (currentTask) => {
+      const nextProgress = Math.min(currentTask.progress + 1, currentTask.target)
+      return {
+        ...currentTask,
+        progress: nextProgress,
+        rewarded: currentTask.rewarded || nextProgress >= currentTask.target,
+      }
+    })
+  }
+
+  const decrementTask = (dayKey, task) => {
+    updateTask(dayKey, task.id, (currentTask) => ({
+      ...currentTask,
+      progress: Math.max(currentTask.progress - 1, 0),
+      rewarded: currentTask.progress - 1 >= currentTask.target ? currentTask.rewarded : false,
+    }))
+  }
+
+  const addTaskToDay = () => {
+    const trimmedTitle = newTaskTitle.trim()
+    if (!trimmedTitle) {
+      return
+    }
+
+    const target = newTaskMode === 'check' ? 1 : Math.max(1, Number(newTaskTarget) || 1)
+    const createdTask = createTask(
+      trimmedTitle,
+      newTaskMode,
+      target,
+      newTaskMode === 'check' ? 18 : 24,
+      newTaskMode === 'check' ? 10 : 14,
+    )
+
+    setWeekPlan((currentWeek) =>
+      currentWeek.map((day) =>
+        day.key === selectedDay
+          ? { ...day, tasks: [...day.tasks, createdTask] }
+          : day,
+      ),
+    )
+
+    setNewTaskTitle('')
+    setNewTaskMode('check')
+    setNewTaskTarget(1)
   }
 
   return (
@@ -141,7 +318,7 @@ function App() {
       <div className="backdrop-glow backdrop-glow-left" />
       <div className="backdrop-glow backdrop-glow-right" />
 
-      <main className={hasEntered ? 'page-stack app-mode' : 'page-stack'}>
+      <main className={hasEntered ? 'page-stack app-mode' : 'page-stack auth-mode'}>
         {!hasEntered ? (
           <EntryScreen
             authMode={authMode}
@@ -150,50 +327,81 @@ function App() {
           />
         ) : (
           <section className="dashboard-frame">
-          <Sidebar currentPage={currentPage} onSelectPage={setCurrentPage} />
-          <div className="content-panel">
-            <HeaderBadge xpBalance={xpBalance} sessionType={sessionType} />
+            <Sidebar
+              currentPage={currentPage}
+              onSelectPage={setCurrentPage}
+              onLogout={logout}
+            />
+            <div className="content-panel">
+              <HeaderBadge coins={coins} xp={xp} sessionType={sessionType} />
 
-            {currentPage === 'Friends' && (
-              <FriendsPage
-                currentTab={friendTab}
-                onTabChange={setFriendTab}
-                friendFilter={friendFilter}
-                onFilterChange={setFriendFilter}
-                friends={filteredFriends}
-                requests={requests}
-              />
-            )}
+              {currentPage === 'Dashboard' && (
+                <DashboardPage
+                  weekPlan={weekPlan}
+                  selectedDay={selectedDay}
+                  todayKey={todayKey}
+                  onSelectDay={setSelectedDay}
+                  activeDay={activeDay}
+                  onToggleTask={toggleTask}
+                  onIncrementTask={incrementTask}
+                  onDecrementTask={decrementTask}
+                  newTaskTitle={newTaskTitle}
+                  onNewTaskTitleChange={setNewTaskTitle}
+                  newTaskMode={newTaskMode}
+                  onNewTaskModeChange={setNewTaskMode}
+                  newTaskTarget={newTaskTarget}
+                  onNewTaskTargetChange={setNewTaskTarget}
+                  onAddTask={addTaskToDay}
+                />
+              )}
 
-            {currentPage === 'Notifications' && (
-              <NotificationsPage
-                filter={notificationFilter}
-                onFilterChange={setNotificationFilter}
-                items={filteredNotifications}
-              />
-            )}
+              {currentPage === 'Friends' && (
+                <FriendsPage
+                  currentTab={friendTab}
+                  onTabChange={setFriendTab}
+                  friendFilter={friendFilter}
+                  onFilterChange={setFriendFilter}
+                  friends={filteredFriends}
+                  requests={requests}
+                />
+              )}
 
-            {currentPage === 'Store' && (
-              <StorePage
-                filter={storeFilter}
-                onFilterChange={setStoreFilter}
-                items={filteredStore}
-                onAddToCart={addToCart}
-              />
-            )}
+              {currentPage === 'Notifications' && (
+                <NotificationsPage
+                  filter={notificationFilter}
+                  onFilterChange={setNotificationFilter}
+                  items={filteredNotifications}
+                />
+              )}
 
-            {currentPage === 'Store Cart' && (
-              <CartPage
-                cart={cart}
-                total={cartTotal}
-                onRemove={removeFromCart}
-              />
-            )}
+              {currentPage === 'Store' && (
+                <StorePage
+                  filter={storeFilter}
+                  onFilterChange={setStoreFilter}
+                  items={filteredStore}
+                  onAddToCart={addToCart}
+                  cart={cart}
+                  total={cartTotal}
+                  onRemoveFromCart={removeFromCart}
+                />
+              )}
 
-            {!['Friends', 'Notifications', 'Store', 'Store Cart'].includes(
-              currentPage,
-            ) && <ComingSoon page={currentPage} />}
-          </div>
+              {currentPage === 'Store Cart' && (
+                <CartPage
+                  cart={cart}
+                  total={cartTotal}
+                  onRemove={removeFromCart}
+                />
+              )}
+
+              {![
+                'Dashboard',
+                'Friends',
+                'Notifications',
+                'Store',
+                'Store Cart',
+              ].includes(currentPage) && <ComingSoon page={currentPage} />}
+            </div>
           </section>
         )}
       </main>
@@ -203,58 +411,28 @@ function App() {
 
 function EntryScreen({ authMode, onSwitchMode, onEnterApp }) {
   return (
-    <section className="entry-frame">
-      <div className="entry-copy">
-        <div className="brand-lockup align-left">
-          <span className="eyebrow">Gamified Productivity</span>
-          <h1>GAMETASK</h1>
-        </div>
-        <p className="entry-lead">
-          Turn homework, habits, and deadlines into a progression system with XP,
-          rewards, friends, and daily momentum.
-        </p>
-
-        <div className="entry-highlights">
-          <div className="highlight-card">
-            <strong>Track Progress</strong>
-            <span>Tasks, streaks, levels, and challenge completion.</span>
-          </div>
-          <div className="highlight-card">
-            <strong>Play Socially</strong>
-            <span>Friends, requests, notifications, and leaderboard hooks.</span>
-          </div>
-          <div className="highlight-card">
-            <strong>Spend Rewards</strong>
-            <span>Themes, powerups, and XP-based store purchases.</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="entry-stack">
-        <div className="hero-card auth-shell single-screen-auth">
-          <div className="auth-toggle">
-            <button
-              className={authMode === 'login' ? 'is-active' : ''}
-              onClick={() => onSwitchMode('login')}
-            >
-              Log In
-            </button>
-            <button
-              className={authMode === 'signup' ? 'is-active' : ''}
-              onClick={() => onSwitchMode('signup')}
-            >
-              Sign Up
-            </button>
-          </div>
-
-          <AuthCard
-            mode={authMode}
-            onSwitchMode={onSwitchMode}
-            onEnterApp={onEnterApp}
-          />
+    <section className="entry-screen-shell">
+      <div className="entry-screen-card">
+        <div className="auth-toggle large">
+          <button
+            className={authMode === 'login' ? 'is-active' : ''}
+            onClick={() => onSwitchMode('login')}
+          >
+            Log In
+          </button>
+          <button
+            className={authMode === 'signup' ? 'is-active' : ''}
+            onClick={() => onSwitchMode('signup')}
+          >
+            Sign Up
+          </button>
         </div>
 
-        <PreviewPanel />
+        <AuthCard
+          mode={authMode}
+          onSwitchMode={onSwitchMode}
+          onEnterApp={onEnterApp}
+        />
       </div>
     </section>
   )
@@ -264,7 +442,7 @@ function AuthCard({ mode, onSwitchMode, onEnterApp }) {
   const isLogin = mode === 'login'
 
   return (
-    <div className="auth-card">
+    <div className="auth-card auth-card-large">
       <div className="social-stack">
         <button className="social-btn">
           <span className="social-icon google">G</span>
@@ -366,76 +544,7 @@ function AuthCard({ mode, onSwitchMode, onEnterApp }) {
   )
 }
 
-function PreviewPanel() {
-  return (
-    <section className="preview-panel">
-      <div className="preview-header">
-        <div>
-          <p className="section-kicker">One-Screen Preview</p>
-          <h2>What guest mode unlocks</h2>
-        </div>
-        <div className="xp-badge">
-          <span className="xp-flame">✦</span>
-          Explore Instantly
-        </div>
-      </div>
-
-      <div className="preview-grid">
-        <article className="preview-card wide">
-          <h3>Friends + Requests</h3>
-          <div className="mini-tabs">
-            <span className="mini-tab active">Friends</span>
-            <span className="mini-tab">Requests</span>
-          </div>
-          <div className="mini-friend-row">
-            {friendList.slice(0, 3).map((friend) => (
-              <div key={friend.name} className="mini-friend-card">
-                <Avatar />
-                <div>
-                  <strong>{friend.name}</strong>
-                  <span>Level {friend.level}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="preview-card">
-          <h3>Notifications</h3>
-          <div className="mini-notification">
-            <div className="challenge-badge small">🔥</div>
-            <div>
-              <strong>Daily Challenge</strong>
-              <span>Finish 2 internship applications today.</span>
-            </div>
-          </div>
-          <div className="mini-notification">
-            <Avatar />
-            <div>
-              <strong>Friend Request</strong>
-              <span>PeterAnteater wants to add you.</span>
-            </div>
-          </div>
-        </article>
-
-        <article className="preview-card">
-          <h3>Reward Store</h3>
-          <div className="mini-store-row">
-            {storeItems.slice(0, 2).map((item) => (
-              <div key={item.id} className="mini-store-card">
-                <ThemeArt art={item.art} compact />
-                <strong>{item.title}</strong>
-                <span>{item.price} XP</span>
-              </div>
-            ))}
-          </div>
-        </article>
-      </div>
-    </section>
-  )
-}
-
-function Sidebar({ currentPage, onSelectPage }) {
+function Sidebar({ currentPage, onSelectPage, onLogout }) {
   return (
     <aside className="sidebar">
       <div>
@@ -461,21 +570,214 @@ function Sidebar({ currentPage, onSelectPage }) {
 
       <div className="sidebar-footer">
         <button className="nav-item">Settings</button>
-        <button className="nav-item">Logout</button>
+        <button className="nav-item" onClick={onLogout}>
+          Logout
+        </button>
       </div>
     </aside>
   )
 }
 
-function HeaderBadge({ xpBalance, sessionType }) {
+function HeaderBadge({ coins, xp, sessionType }) {
   return (
     <div className="top-rail">
-      {sessionType === 'guest' && <div className="guest-badge">Guest Mode</div>}
-      <div className="xp-badge">
-        <span className="xp-flame">✦</span>
-        {xpBalance.toLocaleString()} XP
+      <div className="top-profile">
+        <CharacterIcon />
+        <div>
+          <strong>Task Guide</strong>
+          <span>{sessionType === 'guest' ? 'Guest Mode' : 'Member Mode'}</span>
+        </div>
       </div>
+      <div className="resource-chip coin-chip">🪙 {coins.toLocaleString()} Coins</div>
+      <div className="resource-chip xp-chip">⭐ {xp.toLocaleString()} XP</div>
     </div>
+  )
+}
+
+function DashboardPage({
+  weekPlan,
+  selectedDay,
+  todayKey,
+  onSelectDay,
+  activeDay,
+  onToggleTask,
+  onIncrementTask,
+  onDecrementTask,
+  newTaskTitle,
+  onNewTaskTitleChange,
+  newTaskMode,
+  onNewTaskModeChange,
+  newTaskTarget,
+  onNewTaskTargetChange,
+  onAddTask,
+}) {
+  const completedTasks = weekPlan.reduce(
+    (sum, day) =>
+      sum + day.tasks.filter((task) => task.progress >= task.target).length,
+    0,
+  )
+
+  return (
+    <section className="dashboard-layout">
+      <div className="section-header">
+        <p className="section-kicker">Planner</p>
+        <h2>7 Day Task Calendar</h2>
+      </div>
+
+      <div className="stats-strip">
+        <article className="stat-card">
+          <strong>{completedTasks}</strong>
+          <span>Completed tasks this week</span>
+        </article>
+        <article className="stat-card">
+          <strong>{activeDay.tasks.length}</strong>
+          <span>Tasks scheduled for {activeDay.fullLabel}</span>
+        </article>
+        <article className="stat-card">
+          <strong>{activeDay.fullLabel}</strong>
+          <span>Active planning day</span>
+        </article>
+      </div>
+
+      <div className="calendar-grid">
+        {weekPlan.map((day) => {
+          const doneCount = day.tasks.filter(
+            (task) => task.progress >= task.target,
+          ).length
+
+          return (
+            <button
+              key={day.key}
+              className={
+                selectedDay === day.key
+                  ? 'day-card is-active'
+                  : day.key === todayKey
+                    ? 'day-card is-today'
+                    : 'day-card'
+              }
+              onClick={() => onSelectDay(day.key)}
+            >
+              <span>{day.label}</span>
+              <strong>{day.fullLabel}</strong>
+              <small>
+                {doneCount}/{day.tasks.length || 0} done
+              </small>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="planner-grid">
+        <section className="planner-panel">
+          <div className="panel-heading">
+            <div>
+              <h3>{activeDay.fullLabel} Schedule</h3>
+              <p>Check off tasks or count progress to earn coins and XP.</p>
+            </div>
+          </div>
+
+          <div className="task-stack">
+            {activeDay.tasks.map((task) => (
+              <article key={task.id} className="task-card">
+                <div className="task-main">
+                  <div>
+                    <h4>{task.title}</h4>
+                    <p>
+                      Reward: {task.coinReward} coins + {task.xpReward} XP
+                    </p>
+                  </div>
+                  {task.mode === 'check' ? (
+                    <label className="checkbox-pill">
+                      <input
+                        type="checkbox"
+                        checked={task.progress >= task.target}
+                        onChange={() => onToggleTask(activeDay.key, task)}
+                      />
+                      <span>{task.progress >= task.target ? 'Done' : 'Mark Done'}</span>
+                    </label>
+                  ) : (
+                    <div className="counter-pill">
+                      <button
+                        type="button"
+                        onClick={() => onDecrementTask(activeDay.key, task)}
+                      >
+                        -
+                      </button>
+                      <span>
+                        {task.progress}/{task.target}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onIncrementTask(activeDay.key, task)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="task-progress-bar">
+                  <span
+                    style={{
+                      width: `${(task.progress / task.target) * 100}%`,
+                    }}
+                  />
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <aside className="planner-panel planner-side">
+          <div className="panel-heading">
+            <div>
+              <h3>Add Daily or Task</h3>
+              <p>Create checkbox tasks or count-based goals for this day.</p>
+            </div>
+          </div>
+
+          <div className="task-form">
+            <label>
+              Task Title
+              <input
+                type="text"
+                value={newTaskTitle}
+                onChange={(event) => onNewTaskTitleChange(event.target.value)}
+                placeholder="e.g. Finish lab report"
+              />
+            </label>
+
+            <label>
+              Tracking Type
+              <select
+                value={newTaskMode}
+                onChange={(event) => onNewTaskModeChange(event.target.value)}
+              >
+                <option value="check">Checkbox</option>
+                <option value="count">Count Goal</option>
+              </select>
+            </label>
+
+            {newTaskMode === 'count' && (
+              <label>
+                Target Count
+                <input
+                  type="number"
+                  min="1"
+                  value={newTaskTarget}
+                  onChange={(event) =>
+                    onNewTaskTargetChange(Number(event.target.value))
+                  }
+                />
+              </label>
+            )}
+
+            <button type="button" className="primary-btn full-width" onClick={onAddTask}>
+              Add To {activeDay.fullLabel}
+            </button>
+          </div>
+        </aside>
+      </div>
+    </section>
   )
 }
 
@@ -512,16 +814,12 @@ function FriendsPage({
       {currentTab === 'Friends' ? (
         <>
           <div className="section-header compact">
-            <div>
-              <h3>Friends ({friends.length})</h3>
-            </div>
+            <h3>Friends ({friends.length})</h3>
             <div className="chip-row">
               {['All', 'Favorites'].map((filter) => (
                 <button
                   key={filter}
-                  className={
-                    friendFilter === filter ? 'chip is-active' : 'chip'
-                  }
+                  className={friendFilter === filter ? 'chip is-active' : 'chip'}
                   onClick={() => onFilterChange(filter)}
                 >
                   {filter}
@@ -615,7 +913,15 @@ function NotificationsPage({ filter, onFilterChange, items }) {
   )
 }
 
-function StorePage({ filter, onFilterChange, items, onAddToCart }) {
+function StorePage({
+  filter,
+  onFilterChange,
+  items,
+  onAddToCart,
+  cart,
+  total,
+  onRemoveFromCart,
+}) {
   return (
     <section>
       <div className="section-header split">
@@ -638,24 +944,32 @@ function StorePage({ filter, onFilterChange, items, onAddToCart }) {
         ))}
       </div>
 
-      <div className="store-grid">
-        {items.map((item) => (
-          <article key={item.id} className="store-card">
-            <ThemeArt art={item.art} />
-            <div className="store-body">
-              <div>
-                <h4>{item.title}</h4>
-                <p>{item.description}</p>
+      <div className="cart-layout">
+        <div className="store-grid">
+          {items.map((item) => (
+            <article key={item.id} className="store-card">
+              <ThemeArt art={item.art} />
+              <div className="store-body">
+                <div>
+                  <h4>{item.title}</h4>
+                  <p>{item.description}</p>
+                </div>
+                <div className="store-footer">
+                  <div className="price-tag">🪙 {item.price.toLocaleString()}</div>
+                  <button className="primary-btn" onClick={() => onAddToCart(item)}>
+                    Add
+                  </button>
+                </div>
               </div>
-              <div className="store-footer">
-                <div className="price-tag">{item.price.toLocaleString()} XP</div>
-                <button className="primary-btn" onClick={() => onAddToCart(item)}>
-                  Buy
-                </button>
-              </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          ))}
+        </div>
+
+        <StoreCheckout
+          cart={cart}
+          total={total}
+          onRemove={onRemoveFromCart}
+        />
       </div>
     </section>
   )
@@ -680,7 +994,7 @@ function CartPage({ cart, total, onRemove }) {
                 <h4>{item.title}</h4>
                 <p>Adds a new visual reward or boost for your workspace.</p>
               </div>
-              <div className="price-tag">{item.price.toLocaleString()} XP</div>
+              <div className="price-tag">🪙 {item.price.toLocaleString()}</div>
               <button className="trash-btn" onClick={() => onRemove(item.id)}>
                 🗑
               </button>
@@ -688,24 +1002,36 @@ function CartPage({ cart, total, onRemove }) {
           ))}
         </div>
 
-        <aside className="summary-card">
-          <h3>Order Summary</h3>
-          <div className="summary-lines">
-            {cart.map((item) => (
-              <div key={item.id} className="summary-line">
-                <span>{item.title}</span>
-                <strong>{item.price} XP</strong>
-              </div>
-            ))}
-          </div>
-          <div className="summary-total">
-            <span>Total</span>
-            <strong>{total} XP</strong>
-          </div>
-          <button className="primary-btn full-width">Checkout</button>
-        </aside>
+        <StoreCheckout cart={cart} total={total} onRemove={onRemove} />
       </div>
     </section>
+  )
+}
+
+function StoreCheckout({ cart, total, onRemove }) {
+  return (
+    <aside className="summary-card">
+      <h3>Order Summary</h3>
+      <div className="summary-lines">
+        {cart.map((item) => (
+          <div key={item.id} className="summary-line summary-line-card">
+            <span>{item.title}</span>
+            <div className="summary-actions">
+              <strong>🪙 {item.price}</strong>
+              <button className="summary-remove" onClick={() => onRemove(item.id)}>
+                Remove
+              </button>
+            </div>
+          </div>
+        ))}
+        {cart.length === 0 && <p className="empty-cart-copy">Add items here, then check out.</p>}
+      </div>
+      <div className="summary-total">
+        <span>Total</span>
+        <strong>🪙 {total}</strong>
+      </div>
+      <button className="primary-btn full-width">Checkout</button>
+    </aside>
   )
 }
 
@@ -714,10 +1040,7 @@ function ComingSoon({ page }) {
     <section className="coming-soon">
       <p className="section-kicker">In Progress</p>
       <h2>{page}</h2>
-      <p>
-        This first frontend pass focuses on auth, social screens, notifications,
-        and the reward store. We can build out the remaining page next.
-      </p>
+      <p>This page is still being built around the new dashboard-first flow.</p>
     </section>
   )
 }
@@ -727,6 +1050,18 @@ function Avatar() {
     <div className="avatar">
       <div className="avatar-head" />
       <div className="avatar-body" />
+    </div>
+  )
+}
+
+function CharacterIcon() {
+  return (
+    <div className="character-icon">
+      <div className="character-ears" />
+      <div className="character-face">
+        <span />
+        <span />
+      </div>
     </div>
   )
 }
