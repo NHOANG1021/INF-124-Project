@@ -163,6 +163,16 @@ function App() {
   const [hasEntered, setHasEntered] = useState(false)
   const [sessionType, setSessionType] = useState('guest')
   const [currentPage, setCurrentPage] = useState('Dashboard')
+  
+  const [userSettings, setUserSettings] = useState({
+    firstName: 'Task',
+    lastName: 'Guide',
+    username: 'TaskGuide123',
+    email: 'guide@uci.edu',
+    password: 'password123',
+    darkMode: true,
+  })
+
   const [friendTab, setFriendTab] = useState('Friends')
   const [friendFilter, setFriendFilter] = useState('All')
   const [notificationFilter, setNotificationFilter] = useState('All')
@@ -314,7 +324,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${userSettings.darkMode ? 'theme-dark' : 'theme-light'}`}>
       <div className="backdrop-glow backdrop-glow-left" />
       <div className="backdrop-glow backdrop-glow-right" />
 
@@ -333,7 +343,12 @@ function App() {
               onLogout={logout}
             />
             <div className="content-panel">
-              <HeaderBadge coins={coins} xp={xp} sessionType={sessionType} />
+              <HeaderBadge 
+                coins={coins} 
+                xp={xp} 
+                sessionType={sessionType} 
+                username={userSettings.username} 
+              />
 
               {currentPage === 'Dashboard' && (
                 <DashboardPage
@@ -386,11 +401,11 @@ function App() {
                 />
               )}
 
-              {currentPage === 'Store Cart' && (
-                <CartPage
-                  cart={cart}
-                  total={cartTotal}
-                  onRemove={removeFromCart}
+              {currentPage === 'Settings' && (
+                <SettingsPage 
+                  settings={userSettings} 
+                  onUpdateSettings={setUserSettings} 
+                  onLogout={logout}
                 />
               )}
 
@@ -399,7 +414,7 @@ function App() {
                 'Friends',
                 'Notifications',
                 'Store',
-                'Store Cart',
+                'Settings',
               ].includes(currentPage) && <ComingSoon page={currentPage} />}
             </div>
           </section>
@@ -559,17 +574,16 @@ function Sidebar({ currentPage, onSelectPage, onLogout }) {
               {item}
             </button>
           ))}
-          <button
-            className={currentPage === 'Store Cart' ? 'nav-item is-current' : 'nav-item'}
-            onClick={() => onSelectPage('Store Cart')}
-          >
-            Cart & Checkout
-          </button>
         </nav>
       </div>
 
       <div className="sidebar-footer">
-        <button className="nav-item">Settings</button>
+        <button 
+          className={currentPage === 'Settings' ? 'nav-item is-current' : 'nav-item'} 
+          onClick={() => onSelectPage('Settings')}
+        >
+          Settings
+        </button>
         <button className="nav-item" onClick={onLogout}>
           Logout
         </button>
@@ -578,13 +592,13 @@ function Sidebar({ currentPage, onSelectPage, onLogout }) {
   )
 }
 
-function HeaderBadge({ coins, xp, sessionType }) {
+function HeaderBadge({ coins, xp, sessionType, username }) {
   return (
     <div className="top-rail">
       <div className="top-profile">
         <CharacterIcon />
         <div>
-          <strong>Task Guide</strong>
+          <strong>{username}</strong>
           <span>{sessionType === 'guest' ? 'Guest Mode' : 'Member Mode'}</span>
         </div>
       </div>
@@ -975,39 +989,6 @@ function StorePage({
   )
 }
 
-function CartPage({ cart, total, onRemove }) {
-  return (
-    <section>
-      <div className="section-header">
-        <div>
-          <p className="section-kicker">Store</p>
-          <h2>Cart and Checkout</h2>
-        </div>
-      </div>
-
-      <div className="cart-layout">
-        <div className="cart-list">
-          {cart.map((item) => (
-            <article key={item.id} className="cart-item">
-              <ThemeArt art={item.art} compact />
-              <div className="cart-copy">
-                <h4>{item.title}</h4>
-                <p>Adds a new visual reward or boost for your workspace.</p>
-              </div>
-              <div className="price-tag">🪙 {item.price.toLocaleString()}</div>
-              <button className="trash-btn" onClick={() => onRemove(item.id)}>
-                🗑
-              </button>
-            </article>
-          ))}
-        </div>
-
-        <StoreCheckout cart={cart} total={total} onRemove={onRemove} />
-      </div>
-    </section>
-  )
-}
-
 function StoreCheckout({ cart, total, onRemove }) {
   return (
     <aside className="summary-card">
@@ -1032,6 +1013,122 @@ function StoreCheckout({ cart, total, onRemove }) {
       </div>
       <button className="primary-btn full-width">Checkout</button>
     </aside>
+  )
+}
+
+function SettingsPage({ settings, onUpdateSettings, onLogout }) {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleChange = (field, value) => {
+    onUpdateSettings({ ...settings, [field]: value })
+  }
+
+  return (
+    <section className="dashboard-layout">
+      <div className="section-header">
+        <p className="section-kicker">Preferences</p>
+        <h2>Account Settings</h2>
+      </div>
+
+      <div className="planner-grid">
+        <div className="planner-panel">
+          <div className="panel-heading">
+            <div>
+              <h3>Personal Info</h3>
+              <p>Update your display details and account credentials.</p>
+            </div>
+          </div>
+          
+          <div className="task-form">
+            <div className="form-row-split">
+              <label>
+                First Name
+                <input 
+                  type="text" 
+                  value={settings.firstName} 
+                  onChange={(e) => handleChange('firstName', e.target.value)}
+                  placeholder="Enter first name"
+                />
+              </label>
+              <label>
+                Last Name
+                <input 
+                  type="text" 
+                  value={settings.lastName} 
+                  onChange={(e) => handleChange('lastName', e.target.value)}
+                  placeholder="Enter last name"
+                />
+              </label>
+            </div>
+
+            <label>
+              Email Address
+              <input 
+                type="email" 
+                value={settings.email} 
+                onChange={(e) => handleChange('email', e.target.value)}
+              />
+            </label>
+            
+            <label>
+              Username
+              <input 
+                type="text" 
+                value={settings.username} 
+                onChange={(e) => handleChange('username', e.target.value)}
+              />
+            </label>
+            
+            <label>
+              Password
+              <div className="password-input-wrapper">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  value={settings.password} 
+                  onChange={(e) => handleChange('password', e.target.value)}
+                  className="password-input-field"
+                />
+                <button 
+                  type="button" 
+                  className="password-toggle-btn-inline"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </label>
+
+            <div className="button-group-row">
+              <button className="primary-btn">Save Changes</button>
+              <button className="secondary-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <aside className="planner-panel planner-side">
+          <div className="panel-heading">
+            <h3>Profile & Safety</h3>
+          </div>
+          
+          <div className="avatar-settings-zone">
+            <div className="avatar-large-wrapper">
+               <Avatar />
+            </div>
+            <button className="secondary-btn full-width">Change Avatar</button>
+          </div>
+
+          <hr className="subtle-divider" />
+
+          <div className="danger-zone-v2">
+            <h4>Danger Zone</h4>
+            <p>Once you delete your account, there is no going back. Please be certain.</p>
+            <button className="primary-btn full-width danger-bg" onClick={onLogout}>
+              Delete Account
+            </button>
+          </div>
+        </aside>
+      </div>
+    </section>
   )
 }
 
