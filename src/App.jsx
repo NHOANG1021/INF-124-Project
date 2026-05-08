@@ -407,7 +407,11 @@ function App() {
                   onUpdateSettings={setUserSettings} 
                   onLogout={logout}
                 />
-              )}
+                )}
+                
+                {currentPage === 'Profile' && (
+                  <ProfilePage/>
+                )}
 
               {![
                 'Dashboard',
@@ -415,6 +419,7 @@ function App() {
                 'Notifications',
                 'Store',
                 'Settings',
+                'Profile',
               ].includes(currentPage) && <ComingSoon page={currentPage} />}
             </div>
           </section>
@@ -1160,6 +1165,87 @@ function CharacterIcon() {
         <span />
       </div>
     </div>
+  )
+}
+
+function ProfilePage() {
+  return (
+    <section className="profile-page">
+
+      <div className="left-column">
+        <div className="profile-card">
+          <h3>Software Engineering Student</h3>
+          <p>
+            Senior student at UCI as a SWE major with minor in statistics.
+            Passionate about web development, UI/UX, and building full stack applications.
+          </p>
+
+          <button className="edit-profile-btn">
+            Edit Profile
+          </button>
+        </div>
+        
+        <div className="profile-card">
+          <div className="inventory-header">
+            <h3>Inventory</h3>
+            <div className="search-pill inventory-search">Search Items</div>
+          </div>
+          
+          <div className="inventory-grid">            
+            <div className="item-card">
+              <h4>Dark Theme</h4>
+              <p>Unlocked</p>
+            </div>
+
+            <div className="item-card">
+              <h4>Triple XP</h4>
+              <p>Active</p>
+            </div>
+
+            <div className="item-card">
+              <h4>Task Extender</h4>
+              <p>Owned</p>
+            </div>
+
+            <div className="item-card">
+              <h4>Coin Boost</h4>
+              <p>Owned</p>
+            </div>
+
+            <div className="item-card">
+              <h4>Custom Avatar</h4>
+              <p>Unlocked</p>
+            </div>
+
+            <div className="item-card">
+              <h4>Forest Theme</h4>
+              <p>Active</p>
+            </div>
+
+            <div className="item-card">
+              <h4>Double XP</h4>
+              <p>Owned</p>
+            </div>
+
+            <div className="item-card">
+              <h4>Space Theme</h4>
+              <p>Owned</p>
+            </div>
+
+          </div>
+      
+        </div>
+      </div>
+
+      <div className="statistics-card">
+        <h3>Statistics</h3>
+        <p>Task Completed: <b>458</b></p>
+        <p>Achievement Unlocked: <b>12</b></p>
+        <p>Total Coins Earned: <b>12,400</b></p>
+        <p>Total Number of friends: <b>3</b></p>
+      </div>
+
+    </section>
   )
 }
 

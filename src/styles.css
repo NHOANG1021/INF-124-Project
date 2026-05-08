@@ -75,6 +75,69 @@ button {
   background: #59b9ff;
 }
 
+.profile-page {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-card {
+  background: white;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  width: 700px;
+}
+.profile-card h3,
+.inventory-grid h4,
+.statistics-card h3 {
+  margin-top: 0;
+}
+.statistics-card {
+  background: white;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+
+  width: 350px;
+  min-height: 100%;
+}
+
+.inventory-grid {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 25px;
+}
+
+.inventory-search {
+  min-width: 140px;
+  padding: 6px 10px;
+  font-size: 0.80rem;
+}
+
+.item-card {
+  background: #f7f5ff;
+  border: 1px solid var(--line);
+  padding: 16px;
+  border-radius: 14px;
+  width: 140px;
+}
+
 .page-stack {
   position: relative;
   z-index: 1;
@@ -174,6 +237,18 @@ button {
 .counter-pill button {
   border: 0;
   border-radius: 16px;
+}
+
+.edit-profile-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+
+  background: var(--brand);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .social-btn,
