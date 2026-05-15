@@ -1142,6 +1142,39 @@ button {
   max-width: 540px;
 }
 
+.global-grid-header{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  font-weight: bold;
+  padding: 2px;
+  border-bottom: 1px solid #ccc;
+}
+
+.grid-entry{
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+.lead-button{
+  padding: 8px 14px;
+  color: var(--brand);
+  font-weight: 800;
+  border-radius: 14px;
+}
+
+.button-row {
+  display: flex;
+  gap: 25px;
+  padding: 4px;
+  justify-content: right;
+}
+
+
 @media (max-width: 1200px) {
   .planner-grid,
   .cart-layout,
@@ -1235,4 +1268,5 @@ button {
   .tab-strip {
     grid-template-columns: 1fr;
   }
+
 }

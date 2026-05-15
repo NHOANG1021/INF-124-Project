@@ -10,9 +10,9 @@ const navItems = [
 ]
 
 const friendList = [
-  { name: 'PeterAnteater', level: 4, favorite: true },
-  { name: 'TopTierDev', level: 10, favorite: false },
-  { name: 'DataWiz', level: 20, favorite: true },
+  { name: 'PeterAnteater', level: 42, favorite: true, exp: 85200 },
+  { name: 'TopTierDev', level: 45, favorite: false, exp: 98000 },
+  { name: 'DataWiz', level: 14, favorite: true, exp: 11900},
 ]
 
 const requests = [
@@ -185,6 +185,8 @@ function App() {
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskMode, setNewTaskMode] = useState('check')
   const [newTaskTarget, setNewTaskTarget] = useState(1)
+  const [GlobalTab, setGlobalTab] = useState('Global')
+  const [page, setPage] = useState(1)
 
   const filteredFriends =
     friendFilter === 'Favorites'
@@ -413,6 +415,15 @@ function App() {
                   <ProfilePage/>
                 )}
 
+                {currentPage === 'Leaderboard' && (
+                  <LeaderboardPage
+                  currentShown={GlobalTab}
+                  onTabChange={setGlobalTab}
+                  friends={filteredFriends}
+                  currleadpage={page}
+                  nextleadpage={setPage}/>
+                )}
+
               {![
                 'Dashboard',
                 'Friends',
@@ -420,6 +431,7 @@ function App() {
                 'Store',
                 'Settings',
                 'Profile',
+                'Leaderboard'
               ].includes(currentPage) && <ComingSoon page={currentPage} />}
             </div>
           </section>
@@ -1249,7 +1261,111 @@ function ProfilePage() {
   )
 }
 
-function ThemeArt({ art, compact = false }) {
+function LeaderboardPage({
+  currentShown,
+  onTabChange,
+  friends,
+  currleadpage,
+  nextleadpage,
+}) {
+  const USERS_PER_PAGE = 10;
+  const startIndex = (currleadpage - 1) * USERS_PER_PAGE
+  const endIndex = startIndex + USERS_PER_PAGE
+  const visibleUsers = friends.slice(startIndex, endIndex)
+  return(
+    <section className="LeaderboardPage">
+      <div className="section-header split">
+        <div>
+          <p className="section-kicker">Statistics</p>
+          <h2>Leaderboard</h2>
+        </div>
+        <div className="chip-row">
+              {['Global', 'Friends'].map((filter) => (
+                <button
+                  key={filter}
+                  className={currentShown === filter ? 'chip is-active' : 'chip'}
+                  onClick={() => onTabChange(filter)}
+                >
+                  {filter}
+                </button>
+              ))}
+        </div>
+      </div>
+      {currentShown === 'Global' ? (
+        <>
+          <div className="global-grid-header">
+            <div>Rank</div>
+            <div>User</div>
+            <div>Level</div>
+            <div>Total XP</div>
+          </div>
+          {friends.sort((a, b) => b.level - a.level).map((friend, index)=> (
+            <article key={friend.name} className="grid-entry">
+              <div>{index + 1}</div>
+              <div>{friend.name}</div>
+              <div>{friend.level}</div>
+              <div>{friend.exp}</div>
+            </article>
+          ))}
+          <div class="button-row">
+            <button
+              onClick={() => nextleadpage(currleadpage - 1)}
+              disabled={currleadpage === 1}
+              class="lead-button"
+            >
+                Prev
+            </button>
+            
+            <button
+              onClick={() => nextleadpage(currleadpage + 1)}
+              disabled={endIndex >= friends.length}
+              class="lead-button"
+            >
+              Next
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+        <div className="global-grid-header">
+          <div>Rank</div>
+          <div>User</div>
+          <div>Level</div>
+          <div>Total XP</div>
+        </div>
+        {friends.sort((a, b) => b.level - a.level).map((friend, index)=> (
+          <article key={friend.name} className="grid-entry">
+            <div>{index + 1}</div>
+            <div>{friend.name}</div>
+            <div>{friend.level}</div>
+            <div>{friend.exp}</div>
+          </article>
+        ))}
+        <div class="button-row">
+          <button
+            onClick={() => nextleadpage(currleadpage - 1)}
+            disabled={currleadpage === 1}
+            class="lead-button"
+          >
+              Prev
+          </button>
+          
+          <button
+            onClick={() => nextleadpage(currleadpage + 1)}
+            disabled={endIndex >= friends.length}
+            class="lead-button"
+          >
+            Next
+          </button>
+        </div>
+      </>
+      )}
+    </section>
+  )
+}
+
+function ThemeArt({ 
+  art, compact = false }) {
   return <div className={`theme-art ${art} ${compact ? 'compact' : ''}`} />
 }
 
