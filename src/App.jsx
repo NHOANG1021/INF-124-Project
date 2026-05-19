@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const navItems = [
   'Dashboard',
@@ -90,6 +90,14 @@ const storeItems = [
 
 const starterCart = []
 const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+const accountsStorageKey = 'gametask_accounts'
+const defaultAccount = {
+  firstName: 'Task',
+  lastName: 'Guide',
+  username: 'TaskGuide123',
+  email: 'guide@uci.edu',
+  password: 'password123',
+}
 
 const weekTemplate = [
   {
@@ -157,20 +165,48 @@ function createTask(title, mode, target, coinReward, xpReward) {
   }
 }
 
+function loadStoredAccounts() {
+  if (typeof window === 'undefined') {
+    return [defaultAccount]
+  }
+
+  try {
+    const stored = window.localStorage.getItem(accountsStorageKey)
+    if (!stored) {
+      return [defaultAccount]
+    }
+
+    const parsed = JSON.parse(stored)
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [defaultAccount]
+  } catch {
+    return [defaultAccount]
+  }
+}
+
 function App() {
   const todayKey = dayKeys[new Date().getDay()] ?? 'mon'
   const [authMode, setAuthMode] = useState('login')
   const [hasEntered, setHasEntered] = useState(false)
   const [sessionType, setSessionType] = useState('guest')
   const [currentPage, setCurrentPage] = useState('Dashboard')
+  const [accounts, setAccounts] = useState(loadStoredAccounts)
   
   const [userSettings, setUserSettings] = useState({
-    firstName: 'Task',
-    lastName: 'Guide',
-    username: 'TaskGuide123',
-    email: 'guide@uci.edu',
-    password: 'password123',
+    ...defaultAccount,
     darkMode: true,
+  })
+  const [authFeedback, setAuthFeedback] = useState('')
+  const [loginForm, setLoginForm] = useState({
+    identifier: '',
+    password: '',
+  })
+  const [signupForm, setSignupForm] = useState({
+    firstName: '',
+    lastName: '',
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
   })
 
   const [friendTab, setFriendTab] = useState('Friends')
@@ -180,6 +216,12 @@ function App() {
   const [cart, setCart] = useState(starterCart)
   const [coins, setCoins] = useState(1500)
   const [xp, setXp] = useState(320)
+  const [inventory, setInventory] = useState([])
+  const [equippedItems, setEquippedItems] = useState({
+    Themes: null,
+    Powerups: null,
+  })
+  const [storeFeedback, setStoreFeedback] = useState('')
   const [weekPlan, setWeekPlan] = useState(weekTemplate)
   const [selectedDay, setSelectedDay] = useState(todayKey)
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -203,25 +245,130 @@ function App() {
       ? storeItems
       : storeItems.filter((item) => item.category === storeFilter)
 
+  const currentLevel = Math.floor(xp / 100) + 1
+  const xpIntoLevel = xp % 100
+  const xpGoal = 100
+
   const cartTotal = cart.reduce((sum, item) => sum + item.price, 0)
   const activeDay =
     weekPlan.find((day) => day.key === selectedDay) ?? weekPlan[0]
+  const ownedItemIds = new Set(inventory.map((item) => item.id))
+  const cartItemIds = new Set(cart.map((item) => item.id))
+  const equippedTheme =
+    inventory.find((item) => item.id === equippedItems.Themes) ?? null
+  const equippedAvatar =
+    inventory.find((item) => item.id === equippedItems.Powerups && item.art === 'avatar') ??
+    null
 
-  const enterApp = (type) => {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(accountsStorageKey, JSON.stringify(accounts))
+    }
+  }, [accounts])
+
+  const enterApp = (type, account = null) => {
     setSessionType(type)
     setHasEntered(true)
     setCurrentPage('Dashboard')
+    setAuthFeedback('')
+
+    if (account) {
+      setUserSettings((current) => ({
+        ...current,
+        firstName: account.firstName || current.firstName,
+        lastName: account.lastName || current.lastName,
+        username: account.username,
+        email: account.email,
+        password: account.password,
+      }))
+    }
   }
 
   const logout = () => {
     setHasEntered(false)
     setSessionType('guest')
     setCurrentPage('Dashboard')
+    setLoginForm({ identifier: '', password: '' })
+    setAuthFeedback('')
+  }
+
+  const handleLogin = () => {
+    const identifier = loginForm.identifier.trim().toLowerCase()
+    const password = loginForm.password
+
+    const matchedAccount = accounts.find(
+      (account) =>
+        (account.username.toLowerCase() === identifier ||
+          account.email.toLowerCase() === identifier) &&
+        account.password === password,
+    )
+
+    if (!matchedAccount) {
+      setAuthFeedback('Login failed. Enter a valid username/email and password.')
+      return
+    }
+
+    enterApp('member', matchedAccount)
+  }
+
+  const handleSignup = () => {
+    const firstName = signupForm.firstName.trim()
+    const lastName = signupForm.lastName.trim()
+    const username = signupForm.username.trim()
+    const email = signupForm.email.trim().toLowerCase()
+    const password = signupForm.password
+    const confirmPassword = signupForm.confirmPassword
+
+    if (!firstName || !lastName || !username || !email || !password) {
+      setAuthFeedback('Please complete every sign up field before continuing.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setAuthFeedback('Passwords do not match.')
+      return
+    }
+
+    const alreadyExists = accounts.some(
+      (account) =>
+        account.username.toLowerCase() === username.toLowerCase() ||
+        account.email.toLowerCase() === email,
+    )
+
+    if (alreadyExists) {
+      setAuthFeedback('That username or email is already registered.')
+      return
+    }
+
+    const createdAccount = {
+      firstName,
+      lastName,
+      username,
+      email,
+      password,
+    }
+
+    setAccounts((current) => [...current, createdAccount])
+    setSignupForm({
+      firstName: '',
+      lastName: '',
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    })
+    enterApp('member', createdAccount)
   }
 
   const addToCart = (item) => {
+    if (ownedItemIds.has(item.id)) {
+      setStoreFeedback(`${item.title} is already in your inventory.`)
+      return
+    }
+
     if (!cart.some((entry) => entry.id === item.id)) {
       setCart((current) => [...current, item])
+      setStoreFeedback(`${item.title} added to cart.`)
     }
   }
 
@@ -229,40 +376,73 @@ function App() {
     setCart((current) => current.filter((item) => item.id !== itemId))
   }
 
+  const checkoutCart = () => {
+    if (cart.length === 0) {
+      setStoreFeedback('Add items to your cart before checking out.')
+      return
+    }
+
+    if (cartTotal > coins) {
+      setStoreFeedback('Not enough coins for this purchase.')
+      return
+    }
+
+    setCoins((current) => current - cartTotal)
+    setInventory((current) => [
+      ...current,
+      ...cart.filter((item) => !current.some((owned) => owned.id === item.id)),
+    ])
+    setStoreFeedback('Purchase complete. Your items are now in inventory.')
+    setCart([])
+  }
+
+  const equipItem = (item) => {
+    setEquippedItems((current) => ({
+      ...current,
+      [item.category]: item.id,
+    }))
+  }
+
   const updateTask = (dayKey, taskId, updater) => {
-    let rewardDelta = null
+    let rewardDelta = { coins: 0, xp: 0 }
+    const nextWeekPlan = weekPlan.map((day) => {
+      if (day.key !== dayKey) {
+        return day
+      }
 
-    setWeekPlan((currentWeek) =>
-      currentWeek.map((day) => {
-        if (day.key !== dayKey) {
-          return day
-        }
+      return {
+        ...day,
+        tasks: day.tasks.map((task) => {
+          if (task.id !== taskId) {
+            return task
+          }
 
-        return {
-          ...day,
-          tasks: day.tasks.map((task) => {
-            if (task.id !== taskId) {
-              return task
+          const nextTask = updater(task)
+
+          if (!task.rewarded && nextTask.rewarded) {
+            rewardDelta = {
+              coins: rewardDelta.coins + nextTask.coinReward,
+              xp: rewardDelta.xp + nextTask.xpReward,
             }
+          }
 
-            const nextTask = updater(task)
-
-            if (!task.rewarded && nextTask.rewarded) {
-              rewardDelta = {
-                coins: nextTask.coinReward,
-                xp: nextTask.xpReward,
-              }
+          if (task.rewarded && !nextTask.rewarded) {
+            rewardDelta = {
+              coins: rewardDelta.coins - nextTask.coinReward,
+              xp: rewardDelta.xp - nextTask.xpReward,
             }
+          }
 
-            return nextTask
-          }),
-        }
-      }),
-    )
+          return nextTask
+        }),
+      }
+    })
 
-    if (rewardDelta) {
-      setCoins((current) => current + rewardDelta.coins)
-      setXp((current) => current + rewardDelta.xp)
+    setWeekPlan(nextWeekPlan)
+
+    if (rewardDelta.coins !== 0 || rewardDelta.xp !== 0) {
+      setCoins((current) => Math.max(0, current + rewardDelta.coins))
+      setXp((current) => Math.max(0, current + rewardDelta.xp))
     }
   }
 
@@ -273,7 +453,7 @@ function App() {
       return {
         ...currentTask,
         progress: nextProgress,
-        rewarded: nextProgress >= currentTask.target ? currentTask.rewarded || true : false,
+        rewarded: nextProgress >= currentTask.target,
       }
     })
   }
@@ -293,7 +473,7 @@ function App() {
     updateTask(dayKey, task.id, (currentTask) => ({
       ...currentTask,
       progress: Math.max(currentTask.progress - 1, 0),
-      rewarded: currentTask.progress - 1 >= currentTask.target ? currentTask.rewarded : false,
+      rewarded: Math.max(currentTask.progress - 1, 0) >= currentTask.target,
     }))
   }
 
@@ -334,8 +514,18 @@ function App() {
         {!hasEntered ? (
           <EntryScreen
             authMode={authMode}
-            onSwitchMode={setAuthMode}
+            onSwitchMode={(mode) => {
+              setAuthMode(mode)
+              setAuthFeedback('')
+            }}
             onEnterApp={enterApp}
+            authFeedback={authFeedback}
+            loginForm={loginForm}
+            onLoginFormChange={setLoginForm}
+            signupForm={signupForm}
+            onSignupFormChange={setSignupForm}
+            onLogin={handleLogin}
+            onSignup={handleSignup}
           />
         ) : (
           <section className="dashboard-frame">
@@ -348,8 +538,13 @@ function App() {
               <HeaderBadge 
                 coins={coins} 
                 xp={xp} 
+                currentLevel={currentLevel}
+                xpIntoLevel={xpIntoLevel}
+                xpGoal={xpGoal}
                 sessionType={sessionType} 
                 username={userSettings.username} 
+                equippedTheme={equippedTheme}
+                equippedAvatar={equippedAvatar}
               />
 
               {currentPage === 'Dashboard' && (
@@ -400,6 +595,10 @@ function App() {
                   cart={cart}
                   total={cartTotal}
                   onRemoveFromCart={removeFromCart}
+                  ownedItemIds={ownedItemIds}
+                  cartItemIds={cartItemIds}
+                  onCheckout={checkoutCart}
+                  storeFeedback={storeFeedback}
                 />
               )}
 
@@ -412,7 +611,11 @@ function App() {
                 )}
                 
                 {currentPage === 'Profile' && (
-                  <ProfilePage/>
+                  <ProfilePage
+                    inventory={inventory}
+                    equippedItems={equippedItems}
+                    onEquipItem={equipItem}
+                  />
                 )}
 
                 {currentPage === 'Leaderboard' && (
@@ -441,7 +644,18 @@ function App() {
   )
 }
 
-function EntryScreen({ authMode, onSwitchMode, onEnterApp }) {
+function EntryScreen({
+  authMode,
+  onSwitchMode,
+  onEnterApp,
+  authFeedback,
+  loginForm,
+  onLoginFormChange,
+  signupForm,
+  onSignupFormChange,
+  onLogin,
+  onSignup,
+}) {
   return (
     <section className="entry-screen-shell">
       <div className="entry-screen-card">
@@ -464,13 +678,31 @@ function EntryScreen({ authMode, onSwitchMode, onEnterApp }) {
           mode={authMode}
           onSwitchMode={onSwitchMode}
           onEnterApp={onEnterApp}
+          authFeedback={authFeedback}
+          loginForm={loginForm}
+          onLoginFormChange={onLoginFormChange}
+          signupForm={signupForm}
+          onSignupFormChange={onSignupFormChange}
+          onLogin={onLogin}
+          onSignup={onSignup}
         />
       </div>
     </section>
   )
 }
 
-function AuthCard({ mode, onSwitchMode, onEnterApp }) {
+function AuthCard({
+  mode,
+  onSwitchMode,
+  onEnterApp,
+  authFeedback,
+  loginForm,
+  onLoginFormChange,
+  signupForm,
+  onSignupFormChange,
+  onLogin,
+  onSignup,
+}) {
   const isLogin = mode === 'login'
 
   return (
@@ -491,11 +723,22 @@ function AuthCard({ mode, onSwitchMode, onEnterApp }) {
       </div>
 
       <form className="auth-form">
+        {authFeedback && <p className="auth-feedback">{authFeedback}</p>}
         {isLogin ? (
           <>
             <label>
               Username or Email
-              <input type="text" placeholder="case-sensitive" />
+              <input
+                type="text"
+                placeholder="case-sensitive"
+                value={loginForm.identifier}
+                onChange={(event) =>
+                  onLoginFormChange((current) => ({
+                    ...current,
+                    identifier: event.target.value,
+                  }))
+                }
+              />
             </label>
             <label>
               <div className="label-row">
@@ -504,12 +747,22 @@ function AuthCard({ mode, onSwitchMode, onEnterApp }) {
                   Forgot Password?
                 </button>
               </div>
-              <input type="password" placeholder="Password" />
+              <input
+                type="password"
+                placeholder="Password"
+                value={loginForm.password}
+                onChange={(event) =>
+                  onLoginFormChange((current) => ({
+                    ...current,
+                    password: event.target.value,
+                  }))
+                }
+              />
             </label>
             <button
               type="button"
               className="primary-btn full-width"
-              onClick={() => onEnterApp('member')}
+              onClick={onLogin}
             >
               Log In
             </button>
@@ -534,21 +787,93 @@ function AuthCard({ mode, onSwitchMode, onEnterApp }) {
         ) : (
           <>
             <label>
+              First Name
+              <input
+                type="text"
+                placeholder="e.g. Peter"
+                value={signupForm.firstName}
+                onChange={(event) =>
+                  onSignupFormChange((current) => ({
+                    ...current,
+                    firstName: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <label>
+              Last Name
+              <input
+                type="text"
+                placeholder="e.g. Anteater"
+                value={signupForm.lastName}
+                onChange={(event) =>
+                  onSignupFormChange((current) => ({
+                    ...current,
+                    lastName: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <label>
+              Username
+              <input
+                type="text"
+                placeholder="Choose a username"
+                value={signupForm.username}
+                onChange={(event) =>
+                  onSignupFormChange((current) => ({
+                    ...current,
+                    username: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <label>
               Email
-              <input type="email" placeholder="e.g. peteranteater@example.com" />
+              <input
+                type="email"
+                placeholder="e.g. peteranteater@example.com"
+                value={signupForm.email}
+                onChange={(event) =>
+                  onSignupFormChange((current) => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
+                }
+              />
             </label>
             <label>
               Password
-              <input type="password" placeholder="e.g. *************" />
+              <input
+                type="password"
+                placeholder="e.g. *************"
+                value={signupForm.password}
+                onChange={(event) =>
+                  onSignupFormChange((current) => ({
+                    ...current,
+                    password: event.target.value,
+                  }))
+                }
+              />
             </label>
             <label>
               Confirm Password
-              <input type="password" placeholder="Make sure it matches." />
+              <input
+                type="password"
+                placeholder="Make sure it matches."
+                value={signupForm.confirmPassword}
+                onChange={(event) =>
+                  onSignupFormChange((current) => ({
+                    ...current,
+                    confirmPassword: event.target.value,
+                  }))
+                }
+              />
             </label>
             <button
               type="button"
               className="primary-btn full-width"
-              onClick={() => onEnterApp('member')}
+              onClick={onSignup}
             >
               Continue
             </button>
@@ -609,18 +934,45 @@ function Sidebar({ currentPage, onSelectPage, onLogout }) {
   )
 }
 
-function HeaderBadge({ coins, xp, sessionType, username }) {
+function HeaderBadge({
+  coins,
+  xp,
+  currentLevel,
+  xpIntoLevel,
+  xpGoal,
+  sessionType,
+  username,
+  equippedTheme,
+  equippedAvatar,
+}) {
+  const themeClass = equippedTheme ? `profile-theme-${equippedTheme.art}` : ''
+
   return (
     <div className="top-rail">
-      <div className="top-profile">
-        <CharacterIcon />
-        <div>
-          <strong>{username}</strong>
-          <span>{sessionType === 'guest' ? 'Guest Mode' : 'Member Mode'}</span>
+      <div className={`top-profile ${themeClass}`.trim()}>
+        <CharacterIcon variant={equippedAvatar ? 'custom' : 'default'} />
+        <div className="top-profile-copy">
+          <div>
+            <strong>{username}</strong>
+            <span>
+              {sessionType === 'guest' ? 'Guest Mode' : 'Member Mode'} • Level{' '}
+              {currentLevel}
+            </span>
+          </div>
+          <div className="xp-meter">
+            <div className="xp-meter-label">
+              <span>XP Progress</span>
+              <strong>
+                {xpIntoLevel}/{xpGoal}
+              </strong>
+            </div>
+            <div className="xp-meter-track">
+              <span style={{ width: `${(xpIntoLevel / xpGoal) * 100}%` }} />
+            </div>
+          </div>
         </div>
       </div>
       <div className="resource-chip coin-chip">🪙 {coins.toLocaleString()} Coins</div>
-      <div className="resource-chip xp-chip">⭐ {xp.toLocaleString()} XP</div>
     </div>
   )
 }
@@ -952,6 +1304,10 @@ function StorePage({
   cart,
   total,
   onRemoveFromCart,
+  ownedItemIds,
+  cartItemIds,
+  onCheckout,
+  storeFeedback,
 }) {
   return (
     <section>
@@ -975,6 +1331,8 @@ function StorePage({
         ))}
       </div>
 
+      {storeFeedback && <p className="store-feedback">{storeFeedback}</p>}
+
       <div className="cart-layout">
         <div className="store-grid">
           {items.map((item) => (
@@ -987,8 +1345,16 @@ function StorePage({
                 </div>
                 <div className="store-footer">
                   <div className="price-tag">🪙 {item.price.toLocaleString()}</div>
-                  <button className="primary-btn" onClick={() => onAddToCart(item)}>
-                    Add
+                  <button
+                    className="primary-btn"
+                    disabled={ownedItemIds.has(item.id) || cartItemIds.has(item.id)}
+                    onClick={() => onAddToCart(item)}
+                  >
+                    {ownedItemIds.has(item.id)
+                      ? 'Owned'
+                      : cartItemIds.has(item.id)
+                        ? 'In Cart'
+                        : 'Add'}
                   </button>
                 </div>
               </div>
@@ -1000,13 +1366,14 @@ function StorePage({
           cart={cart}
           total={total}
           onRemove={onRemoveFromCart}
+          onCheckout={onCheckout}
         />
       </div>
     </section>
   )
 }
 
-function StoreCheckout({ cart, total, onRemove }) {
+function StoreCheckout({ cart, total, onRemove, onCheckout }) {
   return (
     <aside className="summary-card">
       <h3>Order Summary</h3>
@@ -1028,7 +1395,9 @@ function StoreCheckout({ cart, total, onRemove }) {
         <span>Total</span>
         <strong>🪙 {total}</strong>
       </div>
-      <button className="primary-btn full-width">Checkout</button>
+      <button className="primary-btn full-width" onClick={onCheckout}>
+        Checkout
+      </button>
     </aside>
   )
 }
@@ -1168,11 +1537,11 @@ function Avatar() {
   )
 }
 
-function CharacterIcon() {
+function CharacterIcon({ variant = 'default' }) {
   return (
-    <div className="character-icon">
-      <div className="character-ears" />
-      <div className="character-face">
+    <div className={variant === 'custom' ? 'character-icon is-custom' : 'character-icon'}>
+      <div className={variant === 'custom' ? 'character-ears is-custom' : 'character-ears'} />
+      <div className={variant === 'custom' ? 'character-face is-custom' : 'character-face'}>
         <span />
         <span />
       </div>
@@ -1180,7 +1549,12 @@ function CharacterIcon() {
   )
 }
 
-function ProfilePage() {
+function ProfilePage({ inventory, equippedItems, onEquipItem }) {
+  const groupedInventory = ['Themes', 'Powerups'].map((category) => ({
+    category,
+    items: inventory.filter((item) => item.category === category),
+  }))
+
   return (
     <section className="profile-page">
 
@@ -1202,48 +1576,45 @@ function ProfilePage() {
             <h3>Inventory</h3>
             <div className="search-pill inventory-search">Search Items</div>
           </div>
-          
-          <div className="inventory-grid">            
-            <div className="item-card">
-              <h4>Dark Theme</h4>
-              <p>Unlocked</p>
-            </div>
 
-            <div className="item-card">
-              <h4>Triple XP</h4>
-              <p>Active</p>
-            </div>
+          <div className="inventory-tag-list">
+            {groupedInventory.map(({ category, items }) => (
+              <div key={category} className="inventory-section">
+                <div className="inventory-tag-row">
+                  <h4>{category}</h4>
+                  <span className="inventory-count">{items.length} owned</span>
+                </div>
 
-            <div className="item-card">
-              <h4>Task Extender</h4>
-              <p>Owned</p>
-            </div>
+                <div className="inventory-grid">
+                  {items.length > 0 ? (
+                    items.map((item) => {
+                      const isEquipped = equippedItems[item.category] === item.id
 
-            <div className="item-card">
-              <h4>Coin Boost</h4>
-              <p>Owned</p>
-            </div>
-
-            <div className="item-card">
-              <h4>Custom Avatar</h4>
-              <p>Unlocked</p>
-            </div>
-
-            <div className="item-card">
-              <h4>Forest Theme</h4>
-              <p>Active</p>
-            </div>
-
-            <div className="item-card">
-              <h4>Double XP</h4>
-              <p>Owned</p>
-            </div>
-
-            <div className="item-card">
-              <h4>Space Theme</h4>
-              <p>Owned</p>
-            </div>
-
+                      return (
+                        <div
+                          key={item.id}
+                          className={isEquipped ? 'item-card is-equipped' : 'item-card'}
+                        >
+                          <ThemeArt art={item.art} compact />
+                          <h4>{item.title}</h4>
+                          <p>{isEquipped ? 'Equipped' : 'Owned'}</p>
+                          <button
+                            className={isEquipped ? 'equip-btn is-equipped' : 'equip-btn'}
+                            onClick={() => onEquipItem(item)}
+                          >
+                            {isEquipped ? 'Active' : 'Equip'}
+                          </button>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <p className="empty-inventory-copy">
+                      No {category.toLowerCase()} purchased yet.
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
       
         </div>
