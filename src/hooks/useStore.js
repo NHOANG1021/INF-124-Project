@@ -1,0 +1,102 @@
+import { useCallback, useMemo, useState } from 'react'
+
+export function useStore() {
+  const [coins, setCoins] = useState(1500)
+  const [xp, setXp] = useState(320)
+  const [cart, setCart] = useState([])
+  const [inventory, setInventory] = useState([])
+  const [equippedItems, setEquippedItems] = useState({ Themes: null, Powerups: null })
+  const [storeFeedback, setStoreFeedback] = useState('')
+
+  const ownedItemIds = useMemo(() => new Set(inventory.map((item) => item.id)), [inventory])
+  const cartItemIds = useMemo(() => new Set(cart.map((item) => item.id)), [cart])
+  const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price, 0), [cart])
+
+  const equippedTheme = useMemo(
+    () => inventory.find((item) => item.id === equippedItems.Themes) ?? null,
+    [inventory, equippedItems.Themes],
+  )
+
+  const equippedAvatar = useMemo(
+    () =>
+      inventory.find(
+        (item) => item.id === equippedItems.Powerups && item.art === 'avatar',
+      ) ?? null,
+    [inventory, equippedItems.Powerups],
+  )
+
+  /** Reward coins and XP atomically (avoids two-render flash). */
+  const applyReward = useCallback((coinDelta, xpDelta) => {
+    if (coinDelta !== 0) setCoins((c) => Math.max(0, c + coinDelta))
+    if (xpDelta !== 0) setXp((x) => Math.max(0, x + xpDelta))
+  }, [])
+
+  const addToCart = useCallback(
+    (item) => {
+      if (ownedItemIds.has(item.id)) {
+        setStoreFeedback(`${item.title} is already in your inventory.`)
+        return
+      }
+      if (!cart.some((entry) => entry.id === item.id)) {
+        setCart((current) => [...current, item])
+        setStoreFeedback(`${item.title} added to cart.`)
+      }
+    },
+    [ownedItemIds, cart],
+  )
+
+  const removeFromCart = useCallback((itemId) => {
+    setCart((current) => current.filter((item) => item.id !== itemId))
+  }, [])
+
+  const checkoutCart = useCallback(() => {
+    if (cart.length === 0) {
+      setStoreFeedback('Add items to your cart before checking out.')
+      return
+    }
+    if (cartTotal > coins) {
+      setStoreFeedback('Not enough coins for this purchase.')
+      return
+    }
+    setCoins((c) => c - cartTotal)
+    setInventory((current) => [
+      ...current,
+      ...cart.filter((item) => !current.some((owned) => owned.id === item.id)),
+    ])
+    setStoreFeedback('Purchase complete. Your items are now in inventory.')
+    setCart([])
+  }, [cart, cartTotal, coins])
+
+  const equipItem = useCallback((item) => {
+    setEquippedItems((current) => ({ ...current, [item.category]: item.id }))
+  }, [])
+
+  const currentLevel = Math.floor(xp / 100) + 1
+  const xpIntoLevel = xp % 100
+  const xpGoal = 100
+
+  return {
+    // currency
+    coins,
+    xp,
+    currentLevel,
+    xpIntoLevel,
+    xpGoal,
+    applyReward,
+    // store
+    cart,
+    cartTotal,
+    cartItemIds,
+    inventory,
+    ownedItemIds,
+    equippedItems,
+    equippedTheme,
+    equippedAvatar,
+    storeFeedback,
+    // actions
+    addToCart,
+    removeFromCart,
+    checkoutCart,
+    equipItem,
+  }
+}
