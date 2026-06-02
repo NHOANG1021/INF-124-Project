@@ -1,0 +1,19 @@
+USERS JSON TEST
+
+{
+  "FirstName": "John",
+  "LastName": "Doe",
+  "Email": "JohnDoe@email.com",
+  "Username": "JohnDoe14",
+  "Password": "mypassword123",
+  "Bio": "GameTask user"
+}
+
+ACHIEVEMENTS JSON TEST
+
+{
+  "AchievementName": "First Tasks",
+  "Description": "Complete your first task",
+  "XpReward": 25,
+  "CoinReward": 200
+}
