@@ -1,0 +1,12 @@
+INSERT INTO dbo.Users (FirstName, LastName, Email, Username, PasswordHash, Level, XP, StreakCount, Coins) values ('Clim', 'Jellicorse', 'cjellicorse0@exblog.jp', 'cjellicorse0', '$2a$04$KTXzn.0dUFYlsfEvLazyg.eX9pPPZnjM.vU7sdu7X0KkT932zp9g.', 7, 5, 2, 24);
+INSERT INTO dbo.Users (FirstName, LastName, Email, Username, PasswordHash, Level, XP, StreakCount, Coins) values ('Lisbeth', 'Corradengo', 'lcorradengo1@blogger.com', 'lcorradengo1', '$2a$04$sevZdiVkMajMvVa6uAnVd.kd3N6tacDfOnj31D3xU8gyhRZ4GY/m2', 3, 8, 4, 630);
+INSERT INTO dbo.Users (FirstName, LastName, Email, Username, PasswordHash, Level, XP, StreakCount, Coins) values ('Roana', 'Jacobowicz', 'rjacobowicz2@furl.net', 'rjacobowicz2', '$2a$04$ygnOYEVVjnq2BodYFJF6x.mWO3LmPrPvlpbtfyaWdhB6XQBseb4WW', 8, 10, 3, 796);
+INSERT INTO dbo.Users (FirstName, LastName, Email, Username, PasswordHash, Level, XP, StreakCount, Coins) values ('Barrie', 'Stone', 'bstone3@shareasale.com', 'bstone3', '$2a$04$hTQuLYekSeqbhwZIiQ8zSepNE4aR13mT3hyMXJb32uEURL7oLFF/e', 3, 1, 2, 730);
+INSERT INTO dbo.Users (FirstName, LastName, Email, Username, PasswordHash, Level, XP, StreakCount, Coins) values ('Marcille', 'Hellwing', 'mhellwing4@indiegogo.com', 'mhellwing4', '$2a$04$jFNS/xQt526gq.GgNwtT.uA/f7MWTMgsMc6tHMU8D396mzesq2VDu', 5, 6, 4, 490);
+INSERT INTO dbo.Users (FirstName, LastName, Email, Username, PasswordHash, Level, XP, StreakCount, Coins) values ('Lanie', 'Lehrmann', 'llehrmann5@dailymail.co.uk', 'llehrmann5', '$2a$04$YmmY98RaacwlfIQbzSydeeCODZ1MQQM6zh6Tt9jxYT22hw1E0ide6', 9, 1, 3, 166);
+INSERT INTO dbo.Users (FirstName, LastName, Email, Username, PasswordHash, Level, XP, StreakCount, Coins) values ('Ajay', 'Doig', 'adoig6@businessweek.com', 'adoig6', '$2a$04$UYmqZD2z69gpTa7jNubtkO8d7t6RFBb5ZfqakGwbG791iaCuuHwTK', 6, 5, 2, 108);
+INSERT INTO dbo.Users (FirstName, LastName, Email, Username, PasswordHash, Level, XP, StreakCount, Coins) values ('Cami', 'Lill', 'clill7@networkadvertising.org', 'clill7', '$2a$04$NPj5KHf3R/2MfxgePeL2SePLNVTqT9vFpFiteOH7RRQzyAgcreXKm', 9, 6, 3, 75);
+INSERT INTO dbo.Users (FirstName, LastName, Email, Username, PasswordHash, Level, XP, StreakCount, Coins) values ('Mariska', 'Pryde', 'mpryde8@seesaa.net', 'mpryde8', '$2a$04$8N06sOinC7LpFv8tyY8dGuEh51ep6s7VuoaR12GPR5ESmhl.RKZGO', 3, 6, 3, 892);
+INSERT INTO dbo.Users (FirstName, LastName, Email, Username, PasswordHash, Level, XP, StreakCount, Coins) values ('Paten', 'Ivoshin', 'pivoshin9@netlog.com', 'pivoshin9', '$2a$04$nvgb7W/rQeS7Bk02B8fZ5u87deJLiLhkxkFfiDzdXcEFDC0bqh1QK', 9, 2, 5, 61);
+
+
