@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 
 // Data
-import { friendList, notifications, requests, storeItems } from './constants/data'
+import { friendList, requests, storeItems } from './constants/data'
 
 // Hooks
 import { useAuth } from './hooks/useAuth'
+import { useNotifications } from './hooks/useNotifications'
 import { useStore } from './hooks/useStore'
 import { useTasks } from './hooks/useTasks'
 
@@ -57,20 +58,27 @@ function App() {
     [friendFilter],
   )
 
-  const filteredNotifications = useMemo(
-    () =>
-      notificationFilter === 'Unread'
-        ? notifications.filter((n) => n.unread)
-        : notifications,
-    [notificationFilter],
-  )
-
   const filteredStore = useMemo(
     () =>
       storeFilter === 'All'
         ? storeItems
         : storeItems.filter((item) => item.category === storeFilter),
     [storeFilter],
+  )
+
+  const notificationCenter = useNotifications(
+    tasks.weekPlan,
+    tasks.todayKey,
+    auth.hasEntered,
+    store.applyReward,
+  )
+
+  const filteredNotifications = useMemo(
+    () =>
+      notificationFilter === 'Unread'
+        ? notificationCenter.items.filter((n) => n.unread)
+        : notificationCenter.items,
+    [notificationCenter.items, notificationFilter],
   )
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -114,6 +122,7 @@ function App() {
                 username={auth.userSettings.username}
                 equippedTheme={store.equippedTheme}
                 equippedAvatar={store.equippedAvatar}
+                equippedFrame={store.equippedFrame}
               />
 
               {currentPage === 'Dashboard' && (
@@ -153,6 +162,8 @@ function App() {
                   filter={notificationFilter}
                   onFilterChange={setNotificationFilter}
                   items={filteredNotifications}
+                  onMarkAsRead={notificationCenter.markAsRead}
+                  onTurnOff={notificationCenter.turnOffNotification}
                 />
               )}
 
@@ -203,6 +214,65 @@ function App() {
           </section>
         )}
       </main>
+
+      {auth.hasEntered && notificationCenter.popupNotification && (
+        <div
+          className={
+            notificationCenter.popupNotification.type === 'streak'
+              ? 'notification-popup reward-popup'
+              : 'notification-popup'
+          }
+        >
+          <div className="notification-popup-card">
+            <div
+              className={
+                notificationCenter.popupNotification.type === 'streak'
+                  ? 'notification-popup-icon is-streak'
+                  : 'notification-popup-icon'
+              }
+            >
+              {notificationCenter.popupNotification.type === 'streak' ? '🔥' : '🔔'}
+            </div>
+            <div className="notification-popup-copy">
+              <strong>{notificationCenter.popupNotification.title}</strong>
+              <p>{notificationCenter.popupNotification.body}</p>
+              {notificationCenter.popupNotification.type === 'streak' && (
+                <div className="notification-reward-pill">+50 Coins • +100 XP</div>
+              )}
+            </div>
+            <div className="notification-popup-actions">
+              <button
+                className="secondary-btn notification-btn"
+                onClick={() =>
+                  notificationCenter.markAsRead(
+                    notificationCenter.popupNotification.id,
+                    notificationCenter.popupNotification.key ??
+                      notificationCenter.popupNotification.id,
+                  )
+                }
+              >
+                {notificationCenter.popupNotification.type === 'streak'
+                  ? 'Claim'
+                  : 'Mark as Read'}
+              </button>
+              {notificationCenter.popupNotification.dismissible && (
+                <button
+                  className="notification-turnoff-btn"
+                  onClick={() =>
+                    notificationCenter.turnOffNotification(
+                      notificationCenter.popupNotification.id,
+                      notificationCenter.popupNotification.key ??
+                        notificationCenter.popupNotification.id,
+                    )
+                  }
+                >
+                  Turn Off
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -10,13 +10,18 @@ export function HeaderBadge({
   username,
   equippedTheme,
   equippedAvatar,
+  equippedFrame,
 }) {
   const themeClass = equippedTheme ? `profile-theme-${equippedTheme.art}` : ''
+  const frameClass = equippedFrame ? `frame-${equippedFrame.art}` : ''
 
   return (
     <div className="top-rail">
       <div className={`top-profile${themeClass ? ` ${themeClass}` : ''}`}>
-        <CharacterIcon variant={equippedAvatar ? 'custom' : 'default'} />
+        <CharacterIcon
+          variant={equippedAvatar ? 'custom' : 'default'}
+          frameClass={frameClass}
+        />
         <div className="top-profile-copy">
           <div>
             <strong>{username}</strong>

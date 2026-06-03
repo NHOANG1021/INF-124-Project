@@ -18,22 +18,7 @@ export const requests = [
   { name: 'PixelPilot', level: 8 },
 ]
 
-export const notifications = [
-  {
-    id: 1,
-    type: 'challenge',
-    title: 'Daily Challenge Updated',
-    body: 'Finish 2 internship applications today.',
-    unread: true,
-  },
-  {
-    id: 2,
-    type: 'friend',
-    title: 'PeterAnteater sent you a friend request',
-    body: 'Wants to add you as a friend.',
-    unread: true,
-  },
-]
+export const notifications = []
 
 export const storeItems = [
   {
@@ -62,6 +47,30 @@ export const storeItems = [
   },
   {
     id: 4,
+    category: 'Themes',
+    title: 'Pink Strawberry Theme',
+    price: 650,
+    art: 'strawberry',
+    description: 'A playful pink UI with sweet berry highlights and soft cards.',
+  },
+  {
+    id: 5,
+    category: 'Themes',
+    title: 'Orange Citrus Theme',
+    price: 650,
+    art: 'orange',
+    description: 'A bright tangerine theme with warm glow accents and energy.',
+  },
+  {
+    id: 6,
+    category: 'Themes',
+    title: 'Blue Ocean Theme',
+    price: 650,
+    art: 'ocean',
+    description: 'A refreshing deep-sea palette with cool blues and wave tones.',
+  },
+  {
+    id: 7,
     category: 'Powerups',
     title: 'Double XP',
     price: 1000,
@@ -69,7 +78,7 @@ export const storeItems = [
     description: 'Boost rewards for the next streak of completed tasks.',
   },
   {
-    id: 5,
+    id: 8,
     category: 'Powerups',
     title: 'Task Extension',
     price: 750,
@@ -77,12 +86,36 @@ export const storeItems = [
     description: 'Use one extension token when you need extra time.',
   },
   {
-    id: 6,
+    id: 9,
     category: 'Powerups',
     title: 'Custom Avatar',
     price: 1200,
     art: 'avatar',
     description: 'Unlock a personalized profile look and badge frame.',
+  },
+  {
+    id: 10,
+    category: 'Frames',
+    title: 'Strawberry Frame',
+    price: 300,
+    art: 'frame-strawberry',
+    description: 'A rosy berry frame that wraps your avatar in pink highlights.',
+  },
+  {
+    id: 11,
+    category: 'Frames',
+    title: 'Citrus Frame',
+    price: 300,
+    art: 'frame-orange',
+    description: 'A sunny orange frame for a bold and energetic profile look.',
+  },
+  {
+    id: 12,
+    category: 'Frames',
+    title: 'Ocean Frame',
+    price: 300,
+    art: 'frame-ocean',
+    description: 'A cool blue frame that gives your avatar a wave-inspired border.',
   },
 ]
 

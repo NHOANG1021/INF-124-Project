@@ -2,7 +2,7 @@ import { Avatar } from '../shared/Avatar'
 import { ThemeArt } from '../shared/ThemeArt'
 import '../../styles/pages/profile.css'
 
-const INVENTORY_CATEGORIES = ['Themes', 'Powerups']
+const INVENTORY_CATEGORIES = ['Themes', 'Frames', 'Powerups']
 
 export function ProfilePage({ inventory, equippedItems, onEquipItem }) {
   const groupedInventory = INVENTORY_CATEGORIES.map((category) => ({

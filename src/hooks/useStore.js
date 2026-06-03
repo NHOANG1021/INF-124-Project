@@ -5,7 +5,11 @@ export function useStore() {
   const [xp, setXp] = useState(320)
   const [cart, setCart] = useState([])
   const [inventory, setInventory] = useState([])
-  const [equippedItems, setEquippedItems] = useState({ Themes: null, Powerups: null })
+  const [equippedItems, setEquippedItems] = useState({
+    Themes: null,
+    Powerups: null,
+    Frames: null,
+  })
   const [storeFeedback, setStoreFeedback] = useState('')
 
   const ownedItemIds = useMemo(() => new Set(inventory.map((item) => item.id)), [inventory])
@@ -23,6 +27,11 @@ export function useStore() {
         (item) => item.id === equippedItems.Powerups && item.art === 'avatar',
       ) ?? null,
     [inventory, equippedItems.Powerups],
+  )
+
+  const equippedFrame = useMemo(
+    () => inventory.find((item) => item.id === equippedItems.Frames) ?? null,
+    [inventory, equippedItems.Frames],
   )
 
   /** Reward coins and XP atomically (avoids two-render flash). */
@@ -98,6 +107,7 @@ export function useStore() {
     equippedItems,
     equippedTheme,
     equippedAvatar,
+    equippedFrame,
     storeFeedback,
     // actions
     addToCart,

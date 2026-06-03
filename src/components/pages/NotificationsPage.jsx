@@ -1,6 +1,12 @@
 import { Avatar } from '../shared/Avatar'
 
-export function NotificationsPage({ filter, onFilterChange, items }) {
+export function NotificationsPage({
+  filter,
+  onFilterChange,
+  items,
+  onMarkAsRead,
+  onTurnOff,
+}) {
   return (
     <section>
       <div className="section-header split">
@@ -25,9 +31,14 @@ export function NotificationsPage({ filter, onFilterChange, items }) {
 
       <div className="notification-stack">
         {items.map((item) => (
-          <article key={item.id} className="notification-card">
+          <article
+            key={item.key ?? item.id}
+            className={item.unread ? 'notification-card is-unread' : 'notification-card'}
+          >
             <div className="notification-main">
-              {item.type === 'challenge' ? (
+              {item.type === 'reminder' ? (
+                <div className="challenge-badge reminder-badge">🔔</div>
+              ) : item.type === 'streak' ? (
                 <div className="challenge-badge">🔥</div>
               ) : (
                 <Avatar />
@@ -41,6 +52,26 @@ export function NotificationsPage({ filter, onFilterChange, items }) {
               <div className="request-actions">
                 <button className="accept-btn">Accept</button>
                 <button className="decline-btn">Decline</button>
+              </div>
+            )}
+            {(item.type === 'reminder' || item.type === 'streak') && (
+              <div className="notification-actions">
+                {item.unread && (
+                  <button
+                    className="secondary-btn notification-btn"
+                    onClick={() => onMarkAsRead(item.id, item.key ?? item.id)}
+                  >
+                    {item.type === 'streak' ? 'Claim' : 'Mark as Read'}
+                  </button>
+                )}
+                {item.dismissible && (
+                  <button
+                    className="notification-turnoff-btn"
+                    onClick={() => onTurnOff(item.id, item.key ?? item.id)}
+                  >
+                    Turn Off
+                  </button>
+                )}
               </div>
             )}
           </article>
