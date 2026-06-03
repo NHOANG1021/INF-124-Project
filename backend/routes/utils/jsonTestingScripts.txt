@@ -17,3 +17,15 @@ ACHIEVEMENTS JSON TEST
   "XpReward": 25,
   "CoinReward": 200
 }
+
+TASK JSON TEST
+
+{
+  "UserID": 1,
+  "TaskTrackingType": 1,
+  "Title": "Complete homework",
+  "IsCompleted": false,
+  "DueDate": "2026-06-10",
+  "XpReward": 50,
+  "CoinReward": 20
+}
