@@ -1,4 +1,4 @@
-﻿USE [GameTask]
+﻿﻿USE [GameTask]
 GO
 /****** Object:  Table [dbo].[Achievements]    Script Date: 5/31/2026 10:08:14 PM ******/
 SET ANSI_NULLS ON
