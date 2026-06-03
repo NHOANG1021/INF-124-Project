@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
+const sql = require("mssql/msnodesqlv8");
 const { connectDB } = require("../db");
+const handleNotFound = require("./utils/handleNotFound");
 
-// GET all stores
+// GET all store items
 router.get("/", async (req, res) => {
   try {
     const pool = await connectDB();
@@ -15,8 +17,116 @@ router.get("/", async (req, res) => {
     res.json(result.recordset);
   } catch (err) {
     res.status(500).json({
-      message: "Failed to get users",
+      message: "Failed to get store items",
       error: err.message,
+    });
+  }
+});
+
+// POST store item
+router.post("/", async (req, res) => {
+  try {
+    const { ItemName, ItemType, Price } = req.body;
+
+    if (!ItemName || !ItemType || Price == null) {
+      return res.status(400).json({
+        error: "ItemName, ItemType, and Price are required"
+      });
+    }
+
+    const pool = await connectDB();
+
+    await pool.request()
+      .input("ItemName", sql.VarChar, ItemName)
+      .input("ItemType", sql.Int, ItemType)
+      .input("Price", sql.Int, Price)
+      .query(`
+        INSERT INTO Store
+        (ItemName, ItemType, Price)
+        VALUES
+        (@ItemName, @ItemType, @Price)
+      `);
+
+    res.status(201).json({
+      message: "Store item added successfully"
+    });
+  } catch (err) {
+    console.error("Error adding store item:", err);
+
+    res.status(500).json({
+      error: "Failed to add store item",
+      details: err.message
+    });
+  }
+});
+
+// UPDATE store item
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ItemName, ItemType, Price } = req.body;
+
+    if (!ItemName || !ItemType || Price == null) {
+      return res.status(400).json({
+        error: "ItemName, ItemType, and Price are required"
+      });
+    }
+
+    const pool = await connectDB();
+
+    const result = await pool.request()
+      .input("ItemID", sql.Int, id)
+      .input("ItemName", sql.VarChar, ItemName)
+      .input("ItemType", sql.Int, ItemType)
+      .input("Price", sql.Int, Price)
+      .query(`
+        UPDATE Store
+        SET ItemName = @ItemName,
+            ItemType = @ItemType,
+            Price = @Price
+        WHERE ItemID = @ItemID
+      `);
+
+    if (handleNotFound(result, res, "Store item")) return;
+
+    res.status(200).json({
+      message: "Store item updated successfully"
+    });
+  } catch (err) {
+    console.error("Error updating store item:", err);
+
+    res.status(500).json({
+      error: "Failed to update store item",
+      details: err.message
+    });
+  }
+});
+
+// DELETE store item
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const pool = await connectDB();
+
+    const result = await pool.request()
+      .input("ItemID", sql.Int, id)
+      .query(`
+        DELETE FROM Store
+        WHERE ItemID = @ItemID
+      `);
+
+    if (handleNotFound(result, res, "Store item")) return;
+
+    res.status(200).json({
+      message: "Store item deleted successfully"
+    });
+  } catch (err) {
+    console.error("Error deleting store item:", err);
+
+    res.status(500).json({
+      error: "Failed to delete store item",
+      details: err.message
     });
   }
 });
