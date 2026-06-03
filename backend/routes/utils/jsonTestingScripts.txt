@@ -29,3 +29,10 @@ TASK JSON TEST
   "XpReward": 50,
   "CoinReward": 20
 }
+
+FriendRequest JSON TEST
+
+{
+  "SenderID": 13,
+  "ReceiverID": 34
+}

@@ -6,6 +6,7 @@ const storeRoutes = require("./routes/store");
 const taskRoutes = require("./routes/task");
 const achievementsRoutes = require("./routes/achievements");
 const friendsRoutes = require("./routes/friends");
+const friendRequestRoutes = require("./routes/friendRequests");
 const notificationRoutes = require("./routes/notification");
 
 
@@ -51,6 +52,7 @@ app.use("/api/store", storeRoutes);
 app.use("/api/task", taskRoutes);
 app.use("/api/achievements", achievementsRoutes);
 app.use("/api/friends", friendsRoutes);
+app.use("/api/friendRequests", friendRequestRoutes);
 app.use("/api/notification", notificationRoutes);
 
 
