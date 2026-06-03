@@ -1,3 +1,5 @@
+import '../../styles/pages/auth.css'
+
 export function AuthCard({
   mode,
   onSwitchMode,

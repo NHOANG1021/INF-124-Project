@@ -1,4 +1,5 @@
 import { ThemeArt } from '../shared/ThemeArt'
+import '../../styles/pages/store.css'
 
 export function StorePage({
   filter,

@@ -1,3 +1,5 @@
+import '../../styles/pages/dashboard.css'
+
 export function DashboardPage({
   weekPlan,
   selectedDay,

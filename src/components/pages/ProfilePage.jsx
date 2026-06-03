@@ -1,5 +1,6 @@
 import { Avatar } from '../shared/Avatar'
 import { ThemeArt } from '../shared/ThemeArt'
+import '../../styles/pages/profile.css'
 
 const INVENTORY_CATEGORIES = ['Themes', 'Powerups']
 
@@ -47,12 +48,28 @@ export function ProfilePage({ inventory, equippedItems, onEquipItem }) {
                           <ThemeArt art={item.art} compact />
                           <h4>{item.title}</h4>
                           <p>{isEquipped ? 'Equipped' : 'Owned'}</p>
-                          <button
-                            className={isEquipped ? 'equip-btn is-equipped' : 'equip-btn'}
-                            onClick={() => onEquipItem(item)}
-                          >
-                            {isEquipped ? 'Active' : 'Equip'}
-                          </button>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            {isEquipped ? (
+                              <>
+                                <button className="equip-btn is-equipped" disabled>
+                                  Active
+                                </button>
+                                <button
+                                  className="equip-btn"
+                                  onClick={() => onEquipItem(null, item.category)}
+                                >
+                                  Unequip
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                className="equip-btn"
+                                onClick={() => onEquipItem(item)}
+                              >
+                                Equip
+                              </button>
+                            )}
+                          </div>
                         </div>
                       )
                     })

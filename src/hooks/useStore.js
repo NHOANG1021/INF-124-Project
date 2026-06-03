@@ -67,8 +67,14 @@ export function useStore() {
     setCart([])
   }, [cart, cartTotal, coins])
 
-  const equipItem = useCallback((item) => {
-    setEquippedItems((current) => ({ ...current, [item.category]: item.id }))
+  // Equip an item or unequip by passing null and a category string.
+  const equipItem = useCallback((itemOrNull, category) => {
+    if (itemOrNull == null) {
+      // unequip the specified category
+      setEquippedItems((current) => ({ ...current, [category]: null }))
+      return
+    }
+    setEquippedItems((current) => ({ ...current, [itemOrNull.category]: itemOrNull.id }))
   }, [])
 
   const currentLevel = Math.floor(xp / 100) + 1

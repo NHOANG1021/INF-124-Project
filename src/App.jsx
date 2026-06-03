@@ -74,8 +74,10 @@ function App() {
   )
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  const themeClass = store.equippedTheme ? `profile-theme-${store.equippedTheme.art}` : ''
+
   return (
-    <div className={`app-shell ${auth.userSettings.darkMode ? 'theme-dark' : 'theme-light'}`}>
+    <div className={`app-shell ${auth.userSettings.darkMode ? 'theme-dark' : 'theme-light'} ${themeClass}`}>
       <div className="backdrop-glow backdrop-glow-left" />
       <div className="backdrop-glow backdrop-glow-right" />
 

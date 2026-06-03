@@ -1,0 +1,159 @@
+.dashboard-layout {
+  display: grid;
+  gap: 18px;
+}
+
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stat-card {
+  padding: 18px;
+  border-radius: 20px;
+}
+
+.stat-card strong {
+  display: block;
+  font-size: 1.8rem;
+  margin-bottom: 4px;
+}
+
+.stat-card span {
+  color: var(--muted);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.day-card {
+  padding: 16px;
+  text-align: left;
+  border-radius: 18px;
+  display: grid;
+  gap: 6px;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.day-card:hover {
+  transform: translateY(-2px);
+}
+
+.day-card span,
+.day-card small {
+  color: var(--muted);
+}
+
+.day-card strong {
+  font-size: 1rem;
+}
+
+.day-card.is-today {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #fff7e4, #fffdfa);
+}
+
+.day-card.is-active {
+  color: white;
+  background: linear-gradient(135deg, #5f50ee 0%, #726fff 100%);
+  border-color: transparent;
+}
+
+.day-card.is-active span,
+.day-card.is-active small {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.planner-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.8fr);
+  gap: 18px;
+}
+
+.planner-panel {
+  border-radius: 24px;
+  padding: 22px;
+}
+
+.panel-heading {
+  margin-bottom: 16px;
+}
+
+.task-stack,
+.request-stack,
+.notification-stack,
+.cart-list,
+.summary-lines {
+  display: grid;
+  gap: 14px;
+}
+
+.task-card,
+.notification-card,
+.request-card,
+.cart-item,
+.friend-card {
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.task-main,
+.notification-main,
+.request-left {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.task-progress-bar {
+  margin-top: 14px;
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-2) 80%, white);
+  overflow: hidden;
+}
+
+.checkbox-pill,
+.counter-pill,
+label,
+.task-form label,
+.tab-btn,
+.nav-item,
+.inventory-count {
+  color: var(--text);
+}
+
+.checkbox-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-2) 88%, white);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.counter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-2) 88%, white);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.counter-pill button {
+  width: 34px;
+  height: 34px;
+  background: var(--brand);
+  color: white;
+  font-weight: 900;
+}

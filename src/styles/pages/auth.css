@@ -1,0 +1,58 @@
+.entry-screen-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+
+.entry-screen-card {
+  width: min(1320px, 100%);
+  min-height: calc(100vh - 64px);
+  border-radius: 42px;
+  background: var(--panel-2);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 48px 32px;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 42px;
+}
+
+.auth-toggle {
+  display: inline-flex;
+  padding: 10px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+
+.auth-card {
+  width: min(100%, 840px);
+  padding: 42px 52px 36px;
+  border-radius: 34px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 92%, white), var(--panel-2));
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 40px rgba(87, 78, 168, 0.06);
+}
+
+.social-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 18px;
+}
+
+.auth-form input,
+.task-form input,
+.task-form select {
+  width: 100%;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 2px solid var(--line-strong);
+  background: var(--panel-2);
+  color: var(--text);
+}
