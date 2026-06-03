@@ -14,22 +14,7 @@ export function AuthCard({
 
   return (
     <div className="auth-card auth-card-large">
-      <div className="social-stack">
-        <button className="social-btn">
-          <span className="social-icon google">G</span>
-          Continue with Google
-        </button>
-        <button className="social-btn">
-          <span className="social-icon apple">A</span>
-          Continue with Apple
-        </button>
-      </div>
-
-      <div className="separator">
-        <span>OR</span>
-      </div>
-
-      <form className="auth-form">
+        <form className="auth-form">
         {authFeedback && <p className="auth-feedback">{authFeedback}</p>}
 
         {isLogin ? (
