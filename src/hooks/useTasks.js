@@ -26,44 +26,41 @@ export function useTasks(applyReward) {
     [weekPlan],
   )
 
-  // Ref lets us smuggle the reward delta out of the setState updater.
-  // React calls functional setState updaters synchronously during the same
-  // call stack, so the ref is populated before applyReward executes below.
-  const pendingReward = useRef({ coins: 0, xp: 0 })
-
+  // Compute reward deltas deterministically from the current weekPlan and
+  // apply them immediately after updating state. This avoids relying on
+  // refs and any assumptions about when React executes functional updaters.
   const updateTask = useCallback(
     (dayKey, taskId, updater) => {
-      pendingReward.current = { coins: 0, xp: 0 }
+      const pending = { coins: 0, xp: 0 }
 
-      setWeekPlan((plan) =>
-        plan.map((day) => {
-          if (day.key !== dayKey) return day
-          return {
-            ...day,
-            tasks: day.tasks.map((task) => {
-              if (task.id !== taskId) return task
-              const next = updater(task)
+      const newPlan = weekPlan.map((day) => {
+        if (day.key !== dayKey) return day
+        return {
+          ...day,
+          tasks: day.tasks.map((task) => {
+            if (task.id !== taskId) return task
+            const next = updater(task)
 
-              if (!task.rewarded && next.rewarded) {
-                pendingReward.current.coins += next.coinReward
-                pendingReward.current.xp += next.xpReward
-              } else if (task.rewarded && !next.rewarded) {
-                pendingReward.current.coins -= next.coinReward
-                pendingReward.current.xp -= next.xpReward
-              }
+            if (!task.rewarded && next.rewarded) {
+              pending.coins += next.coinReward
+              pending.xp += next.xpReward
+            } else if (task.rewarded && !next.rewarded) {
+              pending.coins -= next.coinReward
+              pending.xp -= next.xpReward
+            }
 
-              return next
-            }),
-          }
-        }),
-      )
+            return next
+          }),
+        }
+      })
 
-      const { coins, xp } = pendingReward.current
-      if (coins !== 0 || xp !== 0) {
-        applyReward(coins, xp)
+      setWeekPlan(newPlan)
+
+      if (pending.coins !== 0 || pending.xp !== 0) {
+        applyReward(pending.coins, pending.xp)
       }
     },
-    [applyReward],
+    [weekPlan, applyReward],
   )
 
   const toggleTask = useCallback(
