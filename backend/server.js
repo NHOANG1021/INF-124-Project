@@ -4,6 +4,7 @@ const { connectDB } = require("./db");
 const usersRoutes = require("./routes/users");
 const storeRoutes = require("./routes/store");
 const taskRoutes = require("./routes/task");
+const taskSchedulesRoutes = require("./routes/taskSchedules");
 const achievementsRoutes = require("./routes/achievements");
 const userAchievementsRoutes = require("./routes/userAchievements");
 const friendsRoutes = require("./routes/friends");
@@ -51,6 +52,7 @@ app.get("/api/test-db", async (req, res) => {
 app.use("/api/users", usersRoutes);
 app.use("/api/store", storeRoutes);
 app.use("/api/task", taskRoutes);
+app.use("/api/taskSchedules", taskSchedulesRoutes);
 app.use("/api/achievements", achievementsRoutes);
 app.use("/api/userAchievements", userAchievementsRoutes);
 app.use("/api/friends", friendsRoutes);

@@ -208,7 +208,7 @@ CREATE TABLE [dbo].[TaskSchedules](
 	[TaskID] [int] NOT NULL,
 	[UserID] [int] NOT NULL,
 	[ScheduleDate] [datetime] NOT NULL,
-	[DayofWeek] [int] NULL,
+	[DayofWeekID] [int] NULL,
 	[Created_At] [datetime] NULL,
 PRIMARY KEY CLUSTERED 
 (
