@@ -14,7 +14,9 @@ router.get("/", async (req, res) => {
         ItemID,
         ItemName,
         ItemType,
-        Price
+        Price,
+        Art,
+        Description
       FROM Store
       ORDER BY ItemID
     `);
@@ -33,7 +35,7 @@ router.get("/", async (req, res) => {
 // POST store item
 router.post("/", async (req, res) => {
   try {
-    const { ItemName, ItemType, Price } = req.body;
+    const { ItemName, ItemType, Price, Art, Description } = req.body;
 
     if (!ItemName || !ItemType || Price == null) {
       return res.status(400).json({
@@ -47,12 +49,14 @@ router.post("/", async (req, res) => {
       .input("ItemName", sql.VarChar, ItemName)
       .input("ItemType", sql.Int, ItemType)
       .input("Price", sql.Int, Price)
+      .input("Art", sql.VarChar, Art ?? null)
+      .input("Description", sql.VarChar, Description ?? null)
       .query(`
         INSERT INTO Store
-        (ItemName, ItemType, Price)
-        OUTPUT INSERTED.ItemID, INSERTED.ItemName, INSERTED.ItemType, INSERTED.Price
+        (ItemName, ItemType, Price, Art, Description)
+        OUTPUT INSERTED.ItemID, INSERTED.ItemName, INSERTED.ItemType, INSERTED.Price, INSERTED.Art, INSERTED.Description
         VALUES
-        (@ItemName, @ItemType, @Price)
+        (@ItemName, @ItemType, @Price, @Art, @Description)
       `);
 
     res.status(201).json({
@@ -73,7 +77,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { ItemName, ItemType, Price } = req.body;
+    const { ItemName, ItemType, Price, Art, Description } = req.body;
 
     if (!ItemName || !ItemType || Price == null) {
       return res.status(400).json({
@@ -88,12 +92,16 @@ router.put("/:id", async (req, res) => {
       .input("ItemName", sql.VarChar, ItemName)
       .input("ItemType", sql.Int, ItemType)
       .input("Price", sql.Int, Price)
+      .input("Art", sql.VarChar, Art ?? null)
+      .input("Description", sql.VarChar, Description ?? null)
       .query(`
         UPDATE Store
         SET ItemName = @ItemName,
             ItemType = @ItemType,
-            Price = @Price
-        OUTPUT INSERTED.ItemID, INSERTED.ItemName, INSERTED.ItemType, INSERTED.Price
+            Price = @Price,
+            Art = @Art,
+            Description = @Description
+        OUTPUT INSERTED.ItemID, INSERTED.ItemName, INSERTED.ItemType, INSERTED.Price, INSERTED.Art, INSERTED.Description
         WHERE ItemID = @ItemID
       `);
 

@@ -6,7 +6,8 @@ function getStoreCategory(itemType) {
   const numericType = Number(itemType)
 
   if (numericType === 1) return 'Themes'
-  if (numericType === 2) return 'Frames'
+  if (numericType === 2) return 'Powerups'
+  if (numericType === 3) return 'Frames'
   return 'Powerups'
 }
 
@@ -25,7 +26,7 @@ function formatStoreItem(item) {
     description: item.Description || 'Store item',
     price: Number(item.Price) || 0,
     category: getStoreCategory(item.ItemType),
-    art: getStoreArt(item.ItemType),
+    art: item.Art || 'default',
   }
 }
 

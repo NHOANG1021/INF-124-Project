@@ -151,6 +151,8 @@ CREATE TABLE [dbo].[Store](
 	[ItemName] [varchar](50) NOT NULL,
 	[ItemType] [int] NOT NULL,
 	[Price] [int] NOT NULL,
+	[Art] varchar NULL,
+	[Description] varchar(500)
 PRIMARY KEY CLUSTERED 
 (
 	[ItemID] ASC
