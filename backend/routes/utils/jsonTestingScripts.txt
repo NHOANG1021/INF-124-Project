@@ -1,38 +1,455 @@
+IMPORTANT NOTES
+
+1. Create users first before testing tables that use UserID.
+
+2. Create store items first before testing Inventory.
+
+3. Create achievements first before testing UserAchievements.
+
+4. Create tasks first before testing TaskSchedules and TaskProgress.
+
+5. Make sure NotificationType has data before testing Notification.
+
+6. Make sure DayOfWeek has data before testing TaskSchedules.
+
+7. If a JSON test uses UserID, TaskID, ItemID, AchievementID, NotificationTypeID, or DayofWeekID, adjust the number to match existing IDs in your own database.
+
+8. PasswordHash should not be sent from the frontend. Send Password instead. The backend hashes it before saving it.
+
+
 USERS JSON TEST
 
+POST http://localhost:3000/api/users
+
 {
-  "FirstName": "John",
-  "LastName": "Doe",
-  "Email": "JohnDoe@email.com",
-  "Username": "JohnDoe14",
-  "Password": "mypassword123",
-  "Bio": "GameTask user"
+"FirstName": "John",
+"LastName": "Doe",
+"Email": "[JohnDoe@email.com](mailto:JohnDoe@email.com)",
+"Username": "JohnDoe14",
+"Password": "mypassword123",
+"Bio": "GameTask user"
+}
+
+{
+"FirstName": "Jane",
+"LastName": "Smith",
+"Email": "[JaneSmith@email.com](mailto:JaneSmith@email.com)",
+"Username": "JaneSmith22",
+"Password": "mypassword123",
+"Bio": "Another GameTask user"
+}
+
+{
+"FirstName": "Alex",
+"LastName": "Johnson",
+"Email": "[AlexJohnson@email.com](mailto:AlexJohnson@email.com)",
+"Username": "AlexJ99",
+"Password": "mypassword123",
+"Bio": "Trying to build better habits"
 }
 
 ACHIEVEMENTS JSON TEST
 
+POST http://localhost:3000/api/Achievements
+
 {
-  "AchievementName": "First Tasks",
-  "Description": "Complete your first task",
-  "XpReward": 25,
-  "CoinReward": 200
+"AchievementName": "First Tasks",
+"Description": "Complete your first task",
+"XpReward": 25,
+"CoinReward": 200
+}
+
+{
+"AchievementName": "Task Grinder",
+"Description": "Complete 10 tasks",
+"XpReward": 100,
+"CoinReward": 150
+}
+
+{
+"AchievementName": "Productivity Master",
+"Description": "Complete 50 tasks",
+"XpReward": 250,
+"CoinReward": 500
 }
 
 TASK JSON TEST
 
-{
-  "UserID": 1,
-  "TaskTrackingType": 1,
-  "Title": "Complete homework",
-  "IsCompleted": false,
-  "DueDate": "2026-06-10",
-  "XpReward": 50,
-  "CoinReward": 20
-}
-
-FriendRequest JSON TEST
+POST http://localhost:3000/api/task
 
 {
-  "SenderID": 13,
-  "ReceiverID": 34
+"UserID": 1,
+"TaskTrackingType": 1,
+"Title": "Complete homework",
+"IsCompleted": false,
+"DueDate": "2026-06-10",
+"XpReward": 50,
+"CoinReward": 20
 }
+
+{
+"UserID": 1,
+"TaskTrackingType": 2,
+"Title": "Drink 8 cups of water",
+"IsCompleted": false,
+"DueDate": "2026-06-10",
+"XpReward": 30,
+"CoinReward": 10
+}
+
+{
+"UserID": 2,
+"TaskTrackingType": 1,
+"Title": "Go for a 20 minute walk",
+"IsCompleted": false,
+"DueDate": "2026-06-12",
+"XpReward": 40,
+"CoinReward": 15
+}
+
+FRIEND REQUEST JSON TEST
+
+POST http://localhost:3000/api/friendRequests
+
+{
+"SenderID": 1,
+"ReceiverID": 2
+}
+
+{
+"SenderID": 2,
+"ReceiverID": 3
+}
+
+{
+"SenderID": 3,
+"ReceiverID": 1
+}
+
+STORE JSON TEST
+
+POST http://localhost:3000/api/store
+
+{
+"ItemName": "Dark Theme",
+"ItemType": 1,
+"Price": 500
+}
+
+{
+"ItemName": "Space Theme",
+"ItemType": 1,
+"Price": 500
+}
+
+{
+"ItemName": "Forest Theme",
+"ItemType": 1,
+"Price": 500
+}
+
+{
+"ItemName": "Double XP",
+"ItemType": 2,
+"Price": 500
+}
+
+{
+"ItemName": "Task Extension",
+"ItemType": 2,
+"Price": 500
+}
+
+{
+"ItemName": "Custom Avatar",
+"ItemType": 3,
+"Price": 500
+}
+
+INVENTORY JSON TEST
+
+POST http://localhost:3000/api/inventory
+
+{
+"UserID": 1,
+"ItemID": 1,
+"Quantity": 1,
+"isEquipped": false
+}
+
+{
+"UserID": 1,
+"ItemID": 2,
+"Quantity": 1,
+"isEquipped": true
+}
+
+{
+"UserID": 2,
+"ItemID": 4,
+"Quantity": 2,
+"isEquipped": false
+}
+
+USER ACHIEVEMENTS JSON TEST
+
+POST http://localhost:3000/api/userAchievements
+
+{
+"UserID": 1,
+"AchievementID": 1
+}
+
+{
+"UserID": 1,
+"AchievementID": 2
+}
+
+{
+"UserID": 2,
+"AchievementID": 1
+}
+
+NOTIFICATION JSON TEST
+
+POST http://localhost:3000/api/notification
+
+{
+"NotificationTypeID": 1,
+"UserID": 1,
+"Message": "You unlocked the First Tasks achievement!"
+}
+
+{
+"NotificationTypeID": 2,
+"UserID": 1,
+"Message": "You received a new friend request."
+}
+
+{
+"NotificationTypeID": 3,
+"UserID": 1,
+"Message": "You have a task due soon."
+}
+
+{
+"NotificationTypeID": 4,
+"UserID": 2,
+"Message": "You purchased Dark Theme from the store."
+}
+
+{
+"NotificationTypeID": 5,
+"UserID": 3,
+"Message": "Welcome to GameTask!"
+}
+
+TASK SCHEDULE JSON TEST
+
+POST http://localhost:3000/api/taskSchedules
+
+{
+"TaskID": 1,
+"UserID": 1,
+"ScheduleDate": "2026-06-10",
+"DayofWeekID": 3
+}
+
+{
+"TaskID": 2,
+"UserID": 1,
+"ScheduleDate": "2026-06-12",
+"DayofWeekID": 5
+}
+
+{
+"TaskID": 3,
+"UserID": 2,
+"ScheduleDate": "2026-06-15",
+"DayofWeekID": 1
+}
+
+TASK PROGRESS JSON TEST
+
+POST http://localhost:3000/api/taskProgress
+
+Checkbox Task Example:
+
+{
+"TaskID": 1,
+"UserID": 1,
+"ProgressValue": 0,
+"TargetValue": 1
+}
+
+Count Goal Task Example:
+
+{
+"TaskID": 2,
+"UserID": 1,
+"ProgressValue": 3,
+"TargetValue": 8
+}
+
+Completed Count Goal Example:
+
+{
+"TaskID": 3,
+"UserID": 2,
+"ProgressValue": 5,
+"TargetValue": 5
+}
+
+USER UPDATE JSON TEST
+
+PUT http://localhost:3000/api/users/1
+
+Without password change:
+
+{
+"FirstName": "John",
+"LastName": "Doe",
+"Email": "[JohnDoeUpdated@email.com](mailto:JohnDoeUpdated@email.com)",
+"Username": "JohnDoeUpdated14",
+"Password": "",
+"Bio": "Updated GameTask user bio"
+}
+
+With password change:
+
+{
+"FirstName": "John",
+"LastName": "Doe",
+"Email": "[JohnDoeUpdated@email.com](mailto:JohnDoeUpdated@email.com)",
+"Username": "JohnDoeUpdated14",
+"Password": "newpassword123",
+"Bio": "Updated GameTask user bio with new password"
+}
+
+ACHIEVEMENT UPDATE JSON TEST
+
+PUT http://localhost:3000/api/Achievements/1
+
+{
+"AchievementName": "First Tasks Updated",
+"Description": "Complete your first task and earn a reward",
+"XpReward": 50,
+"CoinReward": 250
+}
+
+TASK UPDATE JSON TEST
+
+PUT http://localhost:3000/api/task/1
+
+{
+"UserID": 1,
+"TaskTrackingType": 1,
+"Title": "Complete updated homework task",
+"IsCompleted": false,
+"DueDate": "2026-06-15",
+"XpReward": 75,
+"CoinReward": 30
+}
+
+STORE UPDATE JSON TEST
+
+PUT http://localhost:3000/api/store/1
+
+{
+"ItemName": "Dark Theme Updated",
+"ItemType": 1,
+"Price": 600
+}
+
+INVENTORY UPDATE JSON TEST
+
+PUT http://localhost:3000/api/inventory/1/1
+
+{
+"Quantity": 2,
+"isEquipped": true
+}
+
+TASK SCHEDULE UPDATE JSON TEST
+
+PUT http://localhost:3000/api/taskSchedules/1
+
+{
+"TaskID": 1,
+"UserID": 1,
+"ScheduleDate": "2026-06-12",
+"DayofWeekID": 5
+}
+
+TASK PROGRESS UPDATE JSON TEST
+
+PUT http://localhost:3000/api/taskProgress/1
+
+{
+"ProgressValue": 5,
+"TargetValue": 10
+}
+
+TASK PROGRESS INCREMENT JSON TEST
+
+PATCH http://localhost:3000/api/taskProgress/1/increment
+
+{
+"Amount": 1
+}
+
+TASK PROGRESS COMPLETE JSON TEST
+
+PATCH http://localhost:3000/api/taskProgress/1/complete
+
+No JSON body needed.
+
+NOTIFICATION MARK READ TEST
+
+PUT http://localhost:3000/api/notification/1/read
+
+No JSON body needed.
+
+NOTIFICATION MARK ALL READ TEST
+
+PUT http://localhost:3000/api/notification/user/1/read-all
+
+No JSON body needed.
+
+FRIEND REQUEST ACCEPT TEST
+
+PUT http://localhost:3000/api/friendRequests/1/accept
+
+No JSON body needed.
+
+FRIEND REQUEST REJECT TEST
+
+PUT http://localhost:3000/api/friendRequests/1/reject
+
+No JSON body needed.
+
+DELETE TEST URLS
+
+DELETE http://localhost:3000/api/users/1
+
+DELETE http://localhost:3000/api/Achievements/1
+
+DELETE http://localhost:3000/api/task/1
+
+DELETE http://localhost:3000/api/store/1
+
+DELETE http://localhost:3000/api/inventory/1/1
+
+DELETE http://localhost:3000/api/user-achievements/1/1
+
+DELETE http://localhost:3000/api/notification/1
+
+DELETE http://localhost:3000/api/taskSchedules/1
+
+DELETE http://localhost:3000/api/taskProgress/1
+
+DELETE http://localhost:3000/api/friendRequests/1
+
+DELETE http://localhost:3000/api/friends/1/2
+
+
