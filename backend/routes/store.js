@@ -10,12 +10,19 @@ router.get("/", async (req, res) => {
     const pool = await connectDB();
 
     const result = await pool.request().query(`
-      SELECT *
+      SELECT
+        ItemID,
+        ItemName,
+        ItemType,
+        Price
       FROM Store
+      ORDER BY ItemID
     `);
 
     res.json(result.recordset);
   } catch (err) {
+    console.error("Error getting store items:", err);
+
     res.status(500).json({
       message: "Failed to get store items",
       error: err.message,
@@ -36,19 +43,21 @@ router.post("/", async (req, res) => {
 
     const pool = await connectDB();
 
-    await pool.request()
+    const result = await pool.request()
       .input("ItemName", sql.VarChar, ItemName)
       .input("ItemType", sql.Int, ItemType)
       .input("Price", sql.Int, Price)
       .query(`
         INSERT INTO Store
         (ItemName, ItemType, Price)
+        OUTPUT INSERTED.ItemID, INSERTED.ItemName, INSERTED.ItemType, INSERTED.Price
         VALUES
         (@ItemName, @ItemType, @Price)
       `);
 
     res.status(201).json({
-      message: "Store item added successfully"
+      message: "Store item added successfully",
+      item: result.recordset[0],
     });
   } catch (err) {
     console.error("Error adding store item:", err);
@@ -84,13 +93,15 @@ router.put("/:id", async (req, res) => {
         SET ItemName = @ItemName,
             ItemType = @ItemType,
             Price = @Price
+        OUTPUT INSERTED.ItemID, INSERTED.ItemName, INSERTED.ItemType, INSERTED.Price
         WHERE ItemID = @ItemID
       `);
 
     if (handleNotFound(result, res, "Store item")) return;
 
     res.status(200).json({
-      message: "Store item updated successfully"
+      message: "Store item updated successfully",
+      item: result.recordset[0],
     });
   } catch (err) {
     console.error("Error updating store item:", err);

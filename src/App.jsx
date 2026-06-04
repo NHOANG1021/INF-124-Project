@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
 // Data
-import { friendList, requests, storeItems } from './constants/data'
+import { friendList, requests } from './constants/data'
 
 // Hooks
 import { useAuth } from './hooks/useAuth'
@@ -59,12 +59,12 @@ function App() {
   )
 
   const filteredStore = useMemo(
-    () =>
-      storeFilter === 'All'
-        ? storeItems
-        : storeItems.filter((item) => item.category === storeFilter),
-    [storeFilter],
-  )
+  () =>
+    storeFilter === 'All'
+      ? store.storeItems
+      : store.storeItems.filter((item) => item.category === storeFilter),
+  [store.storeItems, storeFilter],
+)
 
   const notificationCenter = useNotifications(
     tasks.weekPlan,

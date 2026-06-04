@@ -1,16 +1,73 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
+function getStoreCategory(itemType) {
+  const numericType = Number(itemType)
+
+  if (numericType === 1) return 'Themes'
+  if (numericType === 2) return 'Frames'
+  return 'Powerups'
+}
+
+function getStoreArt(itemType) {
+  const numericType = Number(itemType)
+
+  if (numericType === 1) return 'theme'
+  if (numericType === 2) return 'frame'
+  return 'avatar'
+}
+
+function formatStoreItem(item) {
+  return {
+    id: item.ItemID,
+    title: item.ItemName,
+    description: item.Description || 'Store item',
+    price: Number(item.Price) || 0,
+    category: getStoreCategory(item.ItemType),
+    art: getStoreArt(item.ItemType),
+  }
+}
 
 export function useStore() {
   const [coins, setCoins] = useState(1500)
   const [xp, setXp] = useState(320)
   const [cart, setCart] = useState([])
   const [inventory, setInventory] = useState([])
+  const [storeItems, setStoreItems] = useState([])
+  const [storeLoading, setStoreLoading] = useState(true)
+  const [storeError, setStoreError] = useState('')
   const [equippedItems, setEquippedItems] = useState({
     Themes: null,
     Powerups: null,
     Frames: null,
   })
   const [storeFeedback, setStoreFeedback] = useState('')
+
+  useEffect(() => {
+    async function fetchStoreItems() {
+      try {
+        setStoreLoading(true)
+        setStoreError('')
+
+        const response = await fetch(`${API_BASE_URL}/api/store`)
+
+        if (!response.ok) {
+          throw new Error(`Store request failed with status ${response.status}`)
+        }
+
+        const data = await response.json()
+        setStoreItems(data.map(formatStoreItem))
+      } catch (err) {
+        console.error('Error loading store items:', err)
+        setStoreError('Could not load store items.')
+      } finally {
+        setStoreLoading(false)
+      }
+    }
+
+    fetchStoreItems()
+  }, [])
 
   const ownedItemIds = useMemo(() => new Set(inventory.map((item) => item.id)), [inventory])
   const cartItemIds = useMemo(() => new Set(cart.map((item) => item.id)), [cart])
@@ -98,7 +155,11 @@ export function useStore() {
     xpIntoLevel,
     xpGoal,
     applyReward,
+
     // store
+    storeItems,
+    storeLoading,
+    storeError,
     cart,
     cartTotal,
     cartItemIds,
@@ -109,6 +170,7 @@ export function useStore() {
     equippedAvatar,
     equippedFrame,
     storeFeedback,
+
     // actions
     addToCart,
     removeFromCart,

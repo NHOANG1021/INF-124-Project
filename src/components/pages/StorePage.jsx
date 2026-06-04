@@ -13,6 +13,8 @@ export function StorePage({
   cartItemIds,
   onCheckout,
   storeFeedback,
+  storeLoading,
+  storeError,
 }) {
   return (
     <section>
@@ -36,35 +38,43 @@ export function StorePage({
         ))}
       </div>
 
+      {storeLoading && <p className="store-feedback">Loading store items...</p>}
+      {storeError && <p className="store-feedback">{storeError}</p>}
       {storeFeedback && <p className="store-feedback">{storeFeedback}</p>}
 
       <div className="cart-layout">
         <div className="store-grid">
-          {items.map((item) => (
-            <article key={item.id} className="store-card">
-              <ThemeArt art={item.art} />
-              <div className="store-body">
-                <div>
-                  <h4>{item.title}</h4>
-                  <p>{item.description}</p>
+          {!storeLoading && !storeError && items.length === 0 && (
+            <p className="empty-cart-copy">No store items found.</p>
+          )}
+
+          {!storeLoading &&
+            !storeError &&
+            items.map((item) => (
+              <article key={item.id} className="store-card">
+                <ThemeArt art={item.art} />
+                <div className="store-body">
+                  <div>
+                    <h4>{item.title}</h4>
+                    <p>{item.description}</p>
+                  </div>
+                  <div className="store-footer">
+                    <div className="price-tag">🪙 {item.price.toLocaleString()}</div>
+                    <button
+                      className="primary-btn"
+                      disabled={ownedItemIds.has(item.id) || cartItemIds.has(item.id)}
+                      onClick={() => onAddToCart(item)}
+                    >
+                      {ownedItemIds.has(item.id)
+                        ? 'Owned'
+                        : cartItemIds.has(item.id)
+                          ? 'In Cart'
+                          : 'Add'}
+                    </button>
+                  </div>
                 </div>
-                <div className="store-footer">
-                  <div className="price-tag">🪙 {item.price.toLocaleString()}</div>
-                  <button
-                    className="primary-btn"
-                    disabled={ownedItemIds.has(item.id) || cartItemIds.has(item.id)}
-                    onClick={() => onAddToCart(item)}
-                  >
-                    {ownedItemIds.has(item.id)
-                      ? 'Owned'
-                      : cartItemIds.has(item.id)
-                        ? 'In Cart'
-                        : 'Add'}
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))}
         </div>
 
         <StoreCheckout
