@@ -16,6 +16,8 @@ export function StorePage({
   storeLoading,
   storeError,
 }) {
+  const isRepeatableItem = (item) => item.title === 'Task Extension'
+
   return (
     <section>
       <div className="section-header split">
@@ -62,7 +64,10 @@ export function StorePage({
                     <div className="price-tag">🪙 {item.price.toLocaleString()}</div>
                     <button
                       className="primary-btn"
-                      disabled={ownedItemIds.has(item.id) || cartItemIds.has(item.id)}
+                      disabled={
+                        !isRepeatableItem(item) &&
+                        (ownedItemIds.has(item.id) || cartItemIds.has(item.id))
+                      }
                       onClick={() => onAddToCart(item)}
                     >
                       {ownedItemIds.has(item.id)
@@ -94,11 +99,14 @@ function StoreCheckout({ cart, total, onRemove, onCheckout }) {
       <h3>Order Summary</h3>
       <div className="summary-lines">
         {cart.map((item) => (
-          <div key={item.id} className="summary-line summary-line-card">
+          <div key={item.cartEntryId ?? item.id} className="summary-line summary-line-card">
             <span>{item.title}</span>
             <div className="summary-actions">
               <strong>🪙 {item.price}</strong>
-              <button className="summary-remove" onClick={() => onRemove(item.id)}>
+              <button
+                className="summary-remove"
+                onClick={() => onRemove(item.cartEntryId ?? String(item.id))}
+              >
                 Remove
               </button>
             </div>

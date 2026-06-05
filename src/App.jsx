@@ -46,8 +46,13 @@ function App() {
 
   // ── Hooks ──────────────────────────────────────────────────────────────────
   const auth = useAuth()
-  const store = useStore()
-  const tasks = useTasks(store.applyReward)
+  const store = useStore(auth.profileKey)
+  const tasks = useTasks(
+    store.applyReward,
+    auth.profileKey,
+    store.availableTaskExtensions,
+    store.consumeTaskExtension,
+  )
 
   // ── Derived / filtered lists (memoised) ────────────────────────────────────
   const filteredFriends = useMemo(
@@ -142,6 +147,8 @@ function App() {
                   onNewTaskModeChange={tasks.setNewTaskMode}
                   newTaskTarget={tasks.newTaskTarget}
                   onNewTaskTargetChange={tasks.setNewTaskTarget}
+                  availableTaskExtensions={tasks.availableTaskExtensions}
+                  taskFeedback={tasks.taskFeedback}
                   onAddTask={tasks.addTaskToDay}
                 />
               )}
@@ -180,6 +187,8 @@ function App() {
                   cartItemIds={store.cartItemIds}
                   onCheckout={store.checkoutCart}
                   storeFeedback={store.storeFeedback}
+                  storeLoading={store.storeLoading}
+                  storeError={store.storeError}
                 />
               )}
 

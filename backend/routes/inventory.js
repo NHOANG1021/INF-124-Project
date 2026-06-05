@@ -1,14 +1,19 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
-const handleNotFound = require("./utils/handleNotFound");
 
 // GET all inventory records
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT *
-      FROM Inventory
+      SELECT
+        i.userid AS "UserID",
+        i.itemid AS "ItemID",
+        i.quantity AS "Quantity",
+        i.isequipped AS "isEquipped",
+        i.purchasedat AS "purchasedAt"
+      FROM inventory i
+      ORDER BY i.userid, i.itemid
     `);
 
     res.json(result.rows);
@@ -28,18 +33,20 @@ router.get("/user/:userID", async (req, res) => {
     const result = await pool.query(
       `
       SELECT
-        i."UserID",
-        i."ItemID",
-        i."Quantity",
-        i."isEquipped",
-        i."purchasedAt",
-        s."ItemName",
-        s."ItemType",
-        s."Price"
-      FROM Inventory i
-      JOIN Store s
-        ON i."ItemID" = s."ItemID"
-      WHERE i."UserID" = $1
+        i.userid AS "UserID",
+        i.itemid AS "ItemID",
+        i.quantity AS "Quantity",
+        i.isequipped AS "isEquipped",
+        i.purchasedat AS "purchasedAt",
+        s.itemname AS "ItemName",
+        s.itemtype AS "ItemType",
+        s.price AS "Price",
+        s.art AS "Art",
+        s.description AS "Description"
+      FROM inventory i
+      JOIN store_items s
+        ON i.itemid = s.itemid
+      WHERE i.userid = $1
       `,
       [userID]
     );
@@ -67,9 +74,9 @@ router.post("/", async (req, res) => {
     // Check if user exists
     const userCheck = await pool.query(
       `
-      SELECT "UserID"
-      FROM Users
-      WHERE "UserID" = $1
+      SELECT userid
+      FROM users
+      WHERE userid = $1
       `,
       [UserID]
     );
@@ -83,9 +90,9 @@ router.post("/", async (req, res) => {
     // Check if item exists
     const itemCheck = await pool.query(
       `
-      SELECT "ItemID"
-      FROM Store
-      WHERE "ItemID" = $1
+      SELECT itemid
+      FROM store_items
+      WHERE itemid = $1
       `,
       [ItemID]
     );
@@ -100,9 +107,9 @@ router.post("/", async (req, res) => {
     const existingItem = await pool.query(
       `
       SELECT *
-      FROM Inventory
-      WHERE "UserID" = $1
-        AND "ItemID" = $2
+      FROM inventory
+      WHERE userid = $1
+        AND itemid = $2
       `,
       [UserID, ItemID]
     );
@@ -110,10 +117,10 @@ router.post("/", async (req, res) => {
     if (existingItem.rows.length > 0) {
       await pool.query(
         `
-        UPDATE Inventory
-        SET "Quantity" = "Quantity" + $1
-        WHERE "UserID" = $2
-          AND "ItemID" = $3
+        UPDATE inventory
+        SET quantity = quantity + $1
+        WHERE userid = $2
+          AND itemid = $3
         `,
         [Quantity || 1, UserID, ItemID]
       );
@@ -125,8 +132,8 @@ router.post("/", async (req, res) => {
 
     await pool.query(
       `
-      INSERT INTO Inventory
-      ("UserID", "ItemID", "Quantity", "isEquipped", "purchasedAt")
+      INSERT INTO inventory
+      (userid, itemid, quantity, isequipped, purchasedat)
       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
       `,
       [
@@ -165,11 +172,11 @@ router.put("/:userID/:itemID", async (req, res) => {
 
     const result = await pool.query(
       `
-      UPDATE Inventory
-      SET "Quantity" = $1,
-          "isEquipped" = $2
-      WHERE "UserID" = $3
-        AND "ItemID" = $4
+      UPDATE inventory
+      SET quantity = $1,
+          isequipped = $2
+      WHERE userid = $3
+        AND itemid = $4
       `,
       [
         Quantity,
@@ -179,7 +186,11 @@ router.put("/:userID/:itemID", async (req, res) => {
       ]
     );
 
-    if (handleNotFound(result, res, "Inventory item")) return;
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        message: "Inventory item not found"
+      });
+    }
 
     res.status(200).json({
       message: "Inventory item updated successfully"
@@ -202,14 +213,18 @@ router.delete("/:userID/:itemID", async (req, res) => {
 
     const result = await pool.query(
       `
-      DELETE FROM Inventory
-      WHERE "UserID" = $1
-        AND "ItemID" = $2
+      DELETE FROM inventory
+      WHERE userid = $1
+        AND itemid = $2
       `,
       [userID, itemID]
     );
 
-    if (handleNotFound(result, res, "Inventory item")) return;
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        message: "Inventory item not found"
+      });
+    }
 
     res.status(200).json({
       message: "Inventory item deleted successfully"

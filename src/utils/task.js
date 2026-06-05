@@ -28,8 +28,8 @@ export function buildWeekTemplate() {
       label: 'Mon',
       fullLabel: 'Monday',
       tasks: [
-        createTask('Math homework', 'check', 1, 18, 10),
-        createTask('Drink water', 'count', 8, 24, 12),
+        createTask('Review lecture notes', 'check', 1, 18, 10),
+        createTask('Drink water', 'count', 6, 18, 12),
       ],
     },
     {
@@ -37,39 +37,54 @@ export function buildWeekTemplate() {
       label: 'Tue',
       fullLabel: 'Tuesday',
       tasks: [
-        createTask('Study 45 minutes', 'check', 1, 20, 14),
-        createTask('Pomodoro sessions', 'count', 3, 15, 12),
+        createTask('Study for 45 minutes', 'check', 1, 20, 14),
+        createTask('Finish 3 focused work blocks', 'count', 3, 15, 12),
       ],
     },
     {
       key: 'wed',
       label: 'Wed',
       fullLabel: 'Wednesday',
-      tasks: [createTask('Workout', 'check', 1, 18, 10)],
+      tasks: [
+        createTask('Workout or long walk', 'check', 1, 18, 10),
+        createTask('Reply to important messages', 'check', 1, 12, 8),
+      ],
     },
     {
       key: 'thu',
       label: 'Thu',
       fullLabel: 'Thursday',
-      tasks: [createTask('Read chapter notes', 'check', 1, 16, 8)],
+      tasks: [
+        createTask('Read chapter notes', 'check', 1, 16, 8),
+        createTask('Clean up workspace', 'check', 1, 12, 8),
+      ],
     },
     {
       key: 'fri',
       label: 'Fri',
       fullLabel: 'Friday',
-      tasks: [createTask('Applications sent', 'count', 2, 24, 16)],
+      tasks: [
+        createTask('Finish weekly priority task', 'check', 1, 24, 16),
+        createTask('Plan next week tasks', 'check', 1, 16, 10),
+      ],
     },
     {
       key: 'sat',
       label: 'Sat',
       fullLabel: 'Saturday',
-      tasks: [createTask('Laundry', 'check', 1, 14, 8)],
+      tasks: [
+        createTask('Laundry', 'check', 1, 14, 8),
+        createTask('Reset room or desk', 'check', 1, 14, 8),
+      ],
     },
     {
       key: 'sun',
       label: 'Sun',
       fullLabel: 'Sunday',
-      tasks: [createTask('Weekly reset', 'check', 1, 22, 12)],
+      tasks: [
+        createTask('Weekly reset', 'check', 1, 22, 12),
+        createTask('Rest and recharge', 'check', 1, 10, 6),
+      ],
     },
   ]
 }

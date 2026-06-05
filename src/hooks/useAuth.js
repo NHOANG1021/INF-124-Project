@@ -1,17 +1,42 @@
 import { useCallback, useEffect, useState } from 'react'
 import { defaultAccount } from '../constants/data'
-import { loadStoredAccounts, saveAccounts } from '../utils/storage'
+import {
+  clearSession,
+  loadStoredAccounts,
+  loadStoredSession,
+  saveAccounts,
+  saveSession,
+} from '../utils/storage'
 
 const defaultUserSettings = {
   ...defaultAccount,
   darkMode: true,
 }
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export function useAuth() {
-  const [accounts, setAccounts] = useState(loadStoredAccounts)
-  const [hasEntered, setHasEntered] = useState(false)
-  const [sessionType, setSessionType] = useState('guest')
-  const [userSettings, setUserSettings] = useState(defaultUserSettings)
+  const initialAccounts = loadStoredAccounts()
+  const initialSession = loadStoredSession()
+  const restoredAccount =
+    initialSession?.type === 'member'
+      ? initialAccounts.find(
+          (account) => account.username?.toLowerCase() === initialSession.username?.toLowerCase(),
+        ) ?? null
+      : null
+
+  const [accounts, setAccounts] = useState(initialAccounts)
+  const [hasEntered, setHasEntered] = useState(Boolean(initialSession))
+  const [sessionType, setSessionType] = useState(initialSession?.type || 'guest')
+  const [userSettings, setUserSettings] = useState(
+    restoredAccount
+      ? {
+          ...defaultUserSettings,
+          ...restoredAccount,
+          darkMode: true,
+        }
+      : defaultUserSettings,
+  )
   const [authMode, setAuthMode] = useState('login')
   const [authFeedback, setAuthFeedback] = useState('')
   const [loginForm, setLoginForm] = useState({ identifier: '', password: '' })
@@ -28,6 +53,23 @@ export function useAuth() {
   useEffect(() => {
     saveAccounts(accounts)
   }, [accounts])
+
+  useEffect(() => {
+    if (!hasEntered) {
+      clearSession()
+      return
+    }
+
+    if (sessionType === 'member') {
+      saveSession({
+        type: 'member',
+        username: userSettings.username,
+      })
+      return
+    }
+
+    saveSession({ type: 'guest' })
+  }, [hasEntered, sessionType, userSettings.username])
 
   const enterApp = useCallback((type, account = null) => {
     setSessionType(type)
@@ -83,6 +125,11 @@ export function useAuth() {
       return
     }
 
+    if (!emailPattern.test(email)) {
+      setAuthFeedback('Please enter a valid email address.')
+      return
+    }
+
     if (password !== confirmPassword) {
       setAuthFeedback('Passwords do not match.')
       return
@@ -121,6 +168,7 @@ export function useAuth() {
     // state
     hasEntered,
     sessionType,
+    profileKey: sessionType === 'member' ? `member:${userSettings.username.toLowerCase()}` : 'guest',
     userSettings,
     setUserSettings,
     authMode,

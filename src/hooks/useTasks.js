@@ -1,15 +1,21 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DAY_KEYS } from '../constants/data'
 import { buildWeekTemplate, createTask } from '../utils/task'
+import { loadStoredTaskState, saveStoredTaskState } from '../utils/storage'
 
-export function useTasks(applyReward) {
+export function useTasks(applyReward, profileKey, availableTaskExtensions, consumeTaskExtension) {
   const todayKey = DAY_KEYS[new Date().getDay()] ?? 'mon'
+  const initialTaskState = loadStoredTaskState(profileKey, {
+    weekPlan: buildWeekTemplate(),
+    selectedDay: todayKey,
+  })
 
-  const [weekPlan, setWeekPlan] = useState(buildWeekTemplate)
-  const [selectedDay, setSelectedDay] = useState(todayKey)
+  const [weekPlan, setWeekPlan] = useState(initialTaskState.weekPlan)
+  const [selectedDay, setSelectedDay] = useState(initialTaskState.selectedDay)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskMode, setNewTaskMode] = useState('check')
   const [newTaskTarget, setNewTaskTarget] = useState(1)
+  const [taskFeedback, setTaskFeedback] = useState('')
 
   const activeDay = useMemo(
     () => weekPlan.find((d) => d.key === selectedDay) ?? weekPlan[0],
@@ -98,6 +104,11 @@ export function useTasks(applyReward) {
   )
 
   const addTaskToDay = useCallback(() => {
+    if (availableTaskExtensions <= 0) {
+      setTaskFeedback('Buy a Task Extension in the store to add one custom task slot to the selected day.')
+      return
+    }
+
     const trimmed = newTaskTitle.trim()
     if (!trimmed) return
 
@@ -115,11 +126,46 @@ export function useTasks(applyReward) {
         day.key === selectedDay ? { ...day, tasks: [...day.tasks, task] } : day,
       ),
     )
+    consumeTaskExtension()
+    setTaskFeedback(
+      `${task.title} added to ${activeDay.fullLabel}. ${Math.max(
+        availableTaskExtensions - 1,
+        0,
+      )} extra task slot${availableTaskExtensions - 1 === 1 ? '' : 's'} remaining.`,
+    )
 
     setNewTaskTitle('')
     setNewTaskMode('check')
     setNewTaskTarget(1)
-  }, [newTaskTitle, newTaskMode, newTaskTarget, selectedDay])
+  }, [
+    availableTaskExtensions,
+    newTaskTitle,
+    newTaskMode,
+    newTaskTarget,
+    selectedDay,
+    activeDay.fullLabel,
+    consumeTaskExtension,
+  ])
+
+  useEffect(() => {
+    const nextState = loadStoredTaskState(profileKey, {
+      weekPlan: buildWeekTemplate(),
+      selectedDay: todayKey,
+    })
+    setWeekPlan(nextState.weekPlan)
+    setSelectedDay(nextState.selectedDay)
+    setTaskFeedback('')
+    setNewTaskTitle('')
+    setNewTaskMode('check')
+    setNewTaskTarget(1)
+  }, [profileKey, todayKey])
+
+  useEffect(() => {
+    saveStoredTaskState(profileKey, {
+      weekPlan,
+      selectedDay,
+    })
+  }, [profileKey, weekPlan, selectedDay])
 
   return {
     todayKey,
@@ -134,6 +180,8 @@ export function useTasks(applyReward) {
     setNewTaskMode,
     newTaskTarget,
     setNewTaskTarget,
+    availableTaskExtensions,
+    taskFeedback,
     toggleTask,
     incrementTask,
     decrementTask,

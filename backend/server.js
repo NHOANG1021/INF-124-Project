@@ -13,14 +13,29 @@ const friendsRoutes = require("./routes/friends");
 const friendRequestRoutes = require("./routes/friendRequests");
 const notificationRoutes = require("./routes/notification");
 const inventoryRoutes = require("./routes/inventory");
+require("dotenv").config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_ORIGIN,
+  process.env.VITE_FRONTEND_ORIGIN,
+].filter(Boolean);
 
 // Middleware
-app.use(cors({
-  origin: "http://localhost:5173"
-}));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    },
+  }),
+);
 
 app.use(express.json());
 

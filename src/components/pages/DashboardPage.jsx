@@ -16,8 +16,12 @@ export function DashboardPage({
   onNewTaskModeChange,
   newTaskTarget,
   onNewTaskTargetChange,
+  availableTaskExtensions,
+  taskFeedback,
   onAddTask,
 }) {
+  const canAddTasks = availableTaskExtensions > 0
+
   return (
     <section className="dashboard-layout">
       <div className="section-header">
@@ -37,6 +41,10 @@ export function DashboardPage({
         <article className="stat-card">
           <strong>{activeDay.fullLabel}</strong>
           <span>Active planning day</span>
+        </article>
+        <article className="stat-card">
+          <strong>{availableTaskExtensions}</strong>
+          <span>Custom task slot{availableTaskExtensions === 1 ? '' : 's'} available</span>
         </article>
       </div>
 
@@ -119,9 +127,15 @@ export function DashboardPage({
           <div className="panel-heading">
             <div>
               <h3>Add Daily or Task</h3>
-              <p>Create checkbox tasks or count-based goals for this day.</p>
+              <p>
+                {canAddTasks
+                  ? 'Spend one Task Extension to add one custom task to the selected day.'
+                  : 'Buy a Task Extension in the store to add one custom task slot.'}
+              </p>
             </div>
           </div>
+
+          {taskFeedback && <p className="store-feedback">{taskFeedback}</p>}
 
           <div className="task-form">
             <label>
@@ -131,6 +145,7 @@ export function DashboardPage({
                 value={newTaskTitle}
                 onChange={(e) => onNewTaskTitleChange(e.target.value)}
                 placeholder="e.g. Finish lab report"
+                disabled={!canAddTasks}
               />
             </label>
 
@@ -139,6 +154,7 @@ export function DashboardPage({
               <select
                 value={newTaskMode}
                 onChange={(e) => onNewTaskModeChange(e.target.value)}
+                disabled={!canAddTasks}
               >
                 <option value="check">Checkbox</option>
                 <option value="count">Count Goal</option>
@@ -153,11 +169,17 @@ export function DashboardPage({
                   min="1"
                   value={newTaskTarget}
                   onChange={(e) => onNewTaskTargetChange(Number(e.target.value))}
+                  disabled={!canAddTasks}
                 />
               </label>
             )}
 
-            <button type="button" className="primary-btn full-width" onClick={onAddTask}>
+            <button
+              type="button"
+              className="primary-btn full-width"
+              onClick={onAddTask}
+              disabled={!canAddTasks}
+            >
               Add To {activeDay.fullLabel}
             </button>
           </div>
