@@ -1,15 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
-const handleNotFound = require("./utils/handleNotFound");
 
 // GET all store items
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT *
-      FROM Store
-      ORDER BY ItemID
+      SELECT
+        itemid AS "ItemID",
+        itemname AS "ItemName",
+        itemtype AS "ItemType",
+        price AS "Price"
+      FROM store_items
+      ORDER BY itemid
     `);
 
     res.json(result.rows);
@@ -26,7 +29,7 @@ router.get("/", async (req, res) => {
 // POST store item
 router.post("/", async (req, res) => {
   try {
-    const { ItemName, ItemType, Price, Art, Description } = req.body;
+    const { ItemName, ItemType, Price } = req.body;
 
     if (!ItemName || !ItemType || Price == null) {
       return res.status(400).json({
@@ -34,25 +37,23 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("ItemName", sql.VarChar, ItemName)
-      .input("ItemType", sql.Int, ItemType)
-      .input("Price", sql.Int, Price)
-      .input("Art", sql.VarChar, Art ?? null)
-      .input("Description", sql.VarChar, Description ?? null)
-      .query(`
-        INSERT INTO Store
-        (ItemName, ItemType, Price, Art, Description)
-        OUTPUT INSERTED.ItemID, INSERTED.ItemName, INSERTED.ItemType, INSERTED.Price, INSERTED.Art, INSERTED.Description
-        VALUES
-        (@ItemName, @ItemType, @Price, @Art, @Description)
-      `);
+    const result = await pool.query(
+      `
+      INSERT INTO store_items
+      (itemname, itemtype, price)
+      VALUES ($1, $2, $3)
+      RETURNING
+        itemid AS "ItemID",
+        itemname AS "ItemName",
+        itemtype AS "ItemType",
+        price AS "Price"
+      `,
+      [ItemName, ItemType, Price]
+    );
 
     res.status(201).json({
       message: "Store item added successfully",
-      item: result.recordset[0],
+      item: result.rows[0],
     });
 
   } catch (err) {
@@ -69,7 +70,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { ItemName, ItemType, Price, Art, Description } = req.body;
+    const { ItemName, ItemType, Price } = req.body;
 
     if (!ItemName || !ItemType || Price == null) {
       return res.status(400).json({
@@ -79,20 +80,29 @@ router.put("/:id", async (req, res) => {
 
     const result = await pool.query(
       `
-      UPDATE Store
-      SET "ItemName" = $1,
-          "ItemType" = $2,
-          "Price" = $3
-      WHERE "ItemID" = $4
+      UPDATE store_items
+      SET itemname = $1,
+          itemtype = $2,
+          price = $3
+      WHERE itemid = $4
+      RETURNING
+        itemid AS "ItemID",
+        itemname AS "ItemName",
+        itemtype AS "ItemType",
+        price AS "Price"
       `,
       [ItemName, ItemType, Price, id]
     );
 
-    if (handleNotFound(result, res, "Store item")) return;
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        message: "Store item not found"
+      });
+    }
 
     res.status(200).json({
       message: "Store item updated successfully",
-      item: result.recordset[0],
+      item: result.rows[0],
     });
 
   } catch (err) {
@@ -112,13 +122,17 @@ router.delete("/:id", async (req, res) => {
 
     const result = await pool.query(
       `
-      DELETE FROM Store
-      WHERE "ItemID" = $1
+      DELETE FROM store_items
+      WHERE itemid = $1
       `,
       [id]
     );
 
-    if (handleNotFound(result, res, "Store item")) return;
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        message: "Store item not found"
+      });
+    }
 
     res.status(200).json({
       message: "Store item deleted successfully"
