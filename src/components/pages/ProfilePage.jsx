@@ -1,31 +1,94 @@
+import { useEffect, useState } from 'react'
 import { Avatar } from '../shared/Avatar'
 import { ThemeArt } from '../shared/ThemeArt'
 import '../../styles/pages/profile.css'
 
-const INVENTORY_CATEGORIES = ['Themes', 'Frames', 'Powerups']
+const INVENTORY_CATEGORIES = ['Themes', 'Frames']
 
-export function ProfilePage({ inventory, equippedItems, onEquipItem }) {
+const defaultDescription =
+  'Senior student at UCI as a SWE major with minor in statistics. Passionate about web development, UI/UX, and building full stack applications.'
+
+export function ProfilePage({
+  settings,
+  onUpdateProfile,
+  inventory,
+  equippedItems,
+  onEquipItem,
+}) {
+  const [isEditingDescription, setIsEditingDescription] = useState(false)
+  const [descriptionDraft, setDescriptionDraft] = useState(
+    settings.description || defaultDescription,
+  )
+
+  useEffect(() => {
+    setDescriptionDraft(settings.description || defaultDescription)
+  }, [settings.description])
+
+  const handleSaveDescription = () => {
+    onUpdateProfile({ description: descriptionDraft.trim() || defaultDescription })
+    setIsEditingDescription(false)
+  }
+
+  const handleCancelDescription = () => {
+    setDescriptionDraft(settings.description || defaultDescription)
+    setIsEditingDescription(false)
+  }
+
   const groupedInventory = INVENTORY_CATEGORIES.map((category) => ({
     category,
     items: inventory.filter((item) => item.category === category),
   }))
+
+  const description = settings.description || defaultDescription
 
   return (
     <section className="profile-page">
       <div className="left-column">
         <div className="profile-card">
           <h3>Software Engineering Student</h3>
-          <p>
-            Senior student at UCI as a SWE major with minor in statistics. Passionate
-            about web development, UI/UX, and building full stack applications.
-          </p>
-          <button className="edit-profile-btn">Edit Profile</button>
+          {isEditingDescription ? (
+            <div className="profile-description-editor">
+              <textarea
+                className="profile-description-input"
+                value={descriptionDraft}
+                onChange={(e) => setDescriptionDraft(e.target.value)}
+                rows={4}
+              />
+              <div className="button-group-row">
+                <button
+                  type="button"
+                  className="primary-btn"
+                  onClick={handleSaveDescription}
+                >
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={handleCancelDescription}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p>{description}</p>
+              <button
+                type="button"
+                className="edit-profile-btn"
+                onClick={() => setIsEditingDescription(true)}
+              >
+                Edit Profile
+              </button>
+            </>
+          )}
         </div>
 
         <div className="profile-card">
           <div className="inventory-header">
             <h3>Inventory</h3>
-            <div className="search-pill inventory-search">Search Items</div>
+            {/* <div className="search-pill inventory-search">Search Items</div> */}
           </div>
 
           <div className="inventory-tag-list">

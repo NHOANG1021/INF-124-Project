@@ -160,12 +160,6 @@ POST http://localhost:3000/api/store
 "Price": 500
 }
 
-{
-"ItemName": "Custom Avatar",
-"ItemType": 3,
-"Price": 500
-}
-
 INVENTORY JSON TEST
 
 POST http://localhost:3000/api/inventory

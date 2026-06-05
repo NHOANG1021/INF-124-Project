@@ -17,7 +17,6 @@ export function useNotifications(
   const [dismissedReminderIds, setDismissedReminderIds] = useState([])
   const [popupNotification, setPopupNotification] = useState(null)
   const lastBrowserNoticeRef = useRef('')
-  const loginReminderShownRef = useRef('')
 
   const todayPlan = useMemo(
     () => weekPlan.find((day) => day.key === todayKey) ?? null,
@@ -158,30 +157,6 @@ export function useNotifications(
       Notification.requestPermission().catch(() => {})
     }
   }, [isEnabled])
-
-  useEffect(() => {
-    if (!isEnabled) {
-      loginReminderShownRef.current = ''
-      setPopupNotification(null)
-      return
-    }
-
-    if (streakNotification?.unread) {
-      return
-    }
-
-    if (!reminderNotification || !reminderNotification.unread) {
-      setPopupNotification((current) =>
-        current?.type === 'reminder' ? null : current,
-      )
-      return
-    }
-
-    if (loginReminderShownRef.current === reminderNotification.key) return
-
-    loginReminderShownRef.current = reminderNotification.key
-    setPopupNotification(reminderNotification)
-  }, [isEnabled, reminderNotification])
 
   return {
     items,

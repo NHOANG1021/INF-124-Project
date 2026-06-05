@@ -25,7 +25,7 @@ export function StorePage({
       </div>
 
       <div className="chip-row with-gap">
-        {['All', 'Themes', 'Frames', 'Powerups'].map((chip) => (
+        {['All', 'Themes', 'Frames'].map((chip) => (
           <button
             key={chip}
             className={filter === chip ? 'chip is-active' : 'chip'}

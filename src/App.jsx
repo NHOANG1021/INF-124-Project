@@ -185,6 +185,8 @@ function App() {
 
               {currentPage === 'Profile' && (
                 <ProfilePage
+                  settings={auth.userSettings}
+                  onUpdateProfile={auth.updateProfile}
                   inventory={store.inventory}
                   equippedItems={store.equippedItems}
                   onEquipItem={store.equipItem}

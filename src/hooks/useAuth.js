@@ -29,6 +29,24 @@ export function useAuth() {
     saveAccounts(accounts)
   }, [accounts])
 
+  const updateProfile = useCallback((nextSettings) => {
+    setUserSettings((current) => {
+      const updated = { ...current, ...nextSettings }
+
+      setAccounts((currentAccounts) =>
+        currentAccounts.map((account) =>
+          account.username === current.username &&
+          account.email === current.email &&
+          account.password === current.password
+            ? { ...account, ...nextSettings }
+            : account,
+        ),
+      )
+
+      return updated
+    })
+  }, [])
+
   const enterApp = useCallback((type, account = null) => {
     setSessionType(type)
     setHasEntered(true)
@@ -123,6 +141,7 @@ export function useAuth() {
     sessionType,
     userSettings,
     setUserSettings,
+    updateProfile,
     authMode,
     authFeedback,
     loginForm,

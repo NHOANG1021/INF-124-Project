@@ -7,7 +7,7 @@ export function useStore() {
   const [inventory, setInventory] = useState([])
   const [equippedItems, setEquippedItems] = useState({
     Themes: null,
-    Powerups: null,
+    // Powerups: null,
     Frames: null,
   })
   const [storeFeedback, setStoreFeedback] = useState('')

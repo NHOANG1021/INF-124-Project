@@ -99,7 +99,6 @@ export function SettingsPage({ settings, onUpdateSettings, onLogout }) {
             <div className="avatar-large-wrapper">
               <Avatar />
             </div>
-            <button className="secondary-btn full-width">Change Avatar</button>
           </div>
 
           <hr className="subtle-divider" />
