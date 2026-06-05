@@ -21,14 +21,14 @@
   min-width: 0;
 }
 
-.statistics-card {
+/* .statistics-card {
   background: var(--panel);
   padding: 24px;
   border-radius: 20px;
   border: 1px solid var(--line);
   width: 100%;
   min-height: 100%;
-}
+} */
 
 .inventory-grid {
   display: grid;
