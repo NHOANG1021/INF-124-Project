@@ -10,6 +10,6 @@ VALUES
 INSERT INTO dbo.ItemType ([ItemTypeID], [TypeName])
 VALUES
 (1, 'Themes'),
-(2, 'Powerups'), 
-(3, 'Cosmetic')
+-- (2, 'Powerups'), 
+(2, 'Cosmetic')
 
