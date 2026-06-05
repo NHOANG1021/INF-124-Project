@@ -10,12 +10,21 @@ router.get("/", async (req, res) => {
     const pool = await connectDB();
 
     const result = await pool.request().query(`
-      SELECT *
+      SELECT
+        ItemID,
+        ItemName,
+        ItemType,
+        Price,
+        Art,
+        Description
       FROM Store
+      ORDER BY ItemID
     `);
 
     res.json(result.recordset);
   } catch (err) {
+    console.error("Error getting store items:", err);
+
     res.status(500).json({
       message: "Failed to get store items",
       error: err.message,
@@ -26,7 +35,7 @@ router.get("/", async (req, res) => {
 // POST store item
 router.post("/", async (req, res) => {
   try {
-    const { ItemName, ItemType, Price } = req.body;
+    const { ItemName, ItemType, Price, Art, Description } = req.body;
 
     if (!ItemName || !ItemType || Price == null) {
       return res.status(400).json({
@@ -36,19 +45,23 @@ router.post("/", async (req, res) => {
 
     const pool = await connectDB();
 
-    await pool.request()
+    const result = await pool.request()
       .input("ItemName", sql.VarChar, ItemName)
       .input("ItemType", sql.Int, ItemType)
       .input("Price", sql.Int, Price)
+      .input("Art", sql.VarChar, Art ?? null)
+      .input("Description", sql.VarChar, Description ?? null)
       .query(`
         INSERT INTO Store
-        (ItemName, ItemType, Price)
+        (ItemName, ItemType, Price, Art, Description)
+        OUTPUT INSERTED.ItemID, INSERTED.ItemName, INSERTED.ItemType, INSERTED.Price, INSERTED.Art, INSERTED.Description
         VALUES
-        (@ItemName, @ItemType, @Price)
+        (@ItemName, @ItemType, @Price, @Art, @Description)
       `);
 
     res.status(201).json({
-      message: "Store item added successfully"
+      message: "Store item added successfully",
+      item: result.recordset[0],
     });
   } catch (err) {
     console.error("Error adding store item:", err);
@@ -64,7 +77,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { ItemName, ItemType, Price } = req.body;
+    const { ItemName, ItemType, Price, Art, Description } = req.body;
 
     if (!ItemName || !ItemType || Price == null) {
       return res.status(400).json({
@@ -79,18 +92,24 @@ router.put("/:id", async (req, res) => {
       .input("ItemName", sql.VarChar, ItemName)
       .input("ItemType", sql.Int, ItemType)
       .input("Price", sql.Int, Price)
+      .input("Art", sql.VarChar, Art ?? null)
+      .input("Description", sql.VarChar, Description ?? null)
       .query(`
         UPDATE Store
         SET ItemName = @ItemName,
             ItemType = @ItemType,
-            Price = @Price
+            Price = @Price,
+            Art = @Art,
+            Description = @Description
+        OUTPUT INSERTED.ItemID, INSERTED.ItemName, INSERTED.ItemType, INSERTED.Price, INSERTED.Art, INSERTED.Description
         WHERE ItemID = @ItemID
       `);
 
     if (handleNotFound(result, res, "Store item")) return;
 
     res.status(200).json({
-      message: "Store item updated successfully"
+      message: "Store item updated successfully",
+      item: result.recordset[0],
     });
   } catch (err) {
     console.error("Error updating store item:", err);

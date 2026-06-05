@@ -59,11 +59,11 @@ function App() {
   )
 
   const filteredStore = useMemo(
-    () =>
-      storeFilter === 'All'
-        ? storeItems
-        : storeItems.filter((item) => item.category === storeFilter),
-    [storeFilter],
+  () =>
+    storeFilter === 'All'
+      ? store.storeItems
+      : store.storeItems.filter((item) => item.category === storeFilter),
+  [store.storeItems, storeFilter],
   )
 
   const notificationCenter = useNotifications(
