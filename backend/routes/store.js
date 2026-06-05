@@ -10,7 +10,9 @@ router.get("/", async (req, res) => {
         itemid AS "ItemID",
         itemname AS "ItemName",
         itemtype AS "ItemType",
-        price AS "Price"
+        price AS "Price",
+        art AS "Art",
+        description AS "Description"
       FROM store_items
       ORDER BY itemid
     `);
@@ -29,7 +31,7 @@ router.get("/", async (req, res) => {
 // POST store item
 router.post("/", async (req, res) => {
   try {
-    const { ItemName, ItemType, Price } = req.body;
+    const { ItemName, ItemType, Price, Art, Description } = req.body;
 
     if (!ItemName || !ItemType || Price == null) {
       return res.status(400).json({
@@ -40,15 +42,17 @@ router.post("/", async (req, res) => {
     const result = await pool.query(
       `
       INSERT INTO store_items
-      (itemname, itemtype, price)
-      VALUES ($1, $2, $3)
+      (itemname, itemtype, price, art, description)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING
         itemid AS "ItemID",
         itemname AS "ItemName",
         itemtype AS "ItemType",
-        price AS "Price"
+        price AS "Price",
+        art AS "Art",
+        description AS "Description"
       `,
-      [ItemName, ItemType, Price]
+      [ItemName, ItemType, Price, Art ?? null, Description ?? null]
     );
 
     res.status(201).json({
@@ -70,7 +74,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { ItemName, ItemType, Price } = req.body;
+    const { ItemName, ItemType, Price, Art, Description } = req.body;
 
     if (!ItemName || !ItemType || Price == null) {
       return res.status(400).json({
@@ -83,15 +87,19 @@ router.put("/:id", async (req, res) => {
       UPDATE store_items
       SET itemname = $1,
           itemtype = $2,
-          price = $3
-      WHERE itemid = $4
+          price = $3,
+          art = $4,
+          description = $5
+      WHERE itemid = $6
       RETURNING
         itemid AS "ItemID",
         itemname AS "ItemName",
         itemtype AS "ItemType",
-        price AS "Price"
+        price AS "Price",
+        art AS "Art",
+        description AS "Description"
       `,
-      [ItemName, ItemType, Price, id]
+      [ItemName, ItemType, Price, Art ?? null, Description ?? null, id]
     );
 
     if (result.rowCount === 0) {
