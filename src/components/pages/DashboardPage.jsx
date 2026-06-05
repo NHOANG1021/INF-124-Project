@@ -152,7 +152,7 @@ export function DashboardPage({
                   type="number"
                   min="1"
                   value={newTaskTarget}
-                  onChange={(e) => onNewTaskTargetChange(Number(e.target.value))}
+                  onChange={(e) => onNewTaskTargetChange(e.target.value)}
                 />
               </label>
             )}
