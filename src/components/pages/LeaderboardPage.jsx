@@ -5,19 +5,23 @@ const USERS_PER_PAGE = 10
 export function LeaderboardPage({
   currentShown,
   onTabChange,
+  globalUsers,
   friends,
   currleadpage,
   nextleadpage,
 }) {
+  const activeUsers = currentShown === 'Friends' ? friends : globalUsers
+
   // Sort a copy so the original array is never mutated
-  const sortedFriends = useMemo(
-    () => [...friends].sort((a, b) => b.level - a.level),
-    [friends],
+  const sortedUsers = useMemo(
+    () => [...activeUsers].sort((a, b) => b.exp - a.exp),
+    [activeUsers],
   )
 
   const startIndex = (currleadpage - 1) * USERS_PER_PAGE
   const endIndex = startIndex + USERS_PER_PAGE
-  const visibleUsers = sortedFriends.slice(startIndex, endIndex)
+  const visibleUsers = sortedUsers.slice(startIndex, endIndex)
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / USERS_PER_PAGE))
 
   return (
     <section className="LeaderboardPage">
@@ -65,12 +69,16 @@ export function LeaderboardPage({
         </button>
         <button
           onClick={() => nextleadpage(currleadpage + 1)}
-          disabled={endIndex >= sortedFriends.length}
+          disabled={endIndex >= sortedUsers.length}
           className="lead-button"
         >
           Next
         </button>
       </div>
+
+      <p className="leaderboard-page-count">
+        Page {currleadpage} of {totalPages}
+      </p>
     </section>
   )
 }

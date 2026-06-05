@@ -11,7 +11,29 @@ export const friendList = [
   { name: 'PeterAnteater', level: 42, favorite: true, exp: 85200 },
   { name: 'TopTierDev', level: 45, favorite: false, exp: 98000 },
   { name: 'DataWiz', level: 14, favorite: true, exp: 11900 },
+  { name: 'QuestQueen', level: 37, favorite: false, exp: 76100 },
+  { name: 'BugHunter', level: 29, favorite: true, exp: 52300 },
+  { name: 'PixelPilot', level: 25, favorite: false, exp: 48800 },
+  { name: 'TaskTitan', level: 33, favorite: false, exp: 64200 },
+  { name: 'StudyStorm', level: 18, favorite: true, exp: 27400 },
+  { name: 'CodeComet', level: 31, favorite: false, exp: 59800 },
+  { name: 'NightOwl', level: 22, favorite: true, exp: 43600 },
 ]
+
+const globalOnlyUsers = [
+  { name: 'AlphaArc', level: 49, favorite: false, exp: 112300 },
+  { name: 'ByteBloom', level: 41, favorite: false, exp: 90750 },
+  { name: 'ClutchCraft', level: 39, favorite: false, exp: 83500 },
+  { name: 'DeltaDrive', level: 28, favorite: false, exp: 55600 },
+  { name: 'EchoEdge', level: 35, favorite: false, exp: 71300 },
+  { name: 'FluxFable', level: 16, favorite: false, exp: 20900 },
+  { name: 'GlitchGrove', level: 24, favorite: false, exp: 40100 },
+  { name: 'HyperHawk', level: 44, favorite: false, exp: 95400 },
+  { name: 'IonIris', level: 27, favorite: false, exp: 51900 },
+  { name: 'JoltJade', level: 19, favorite: false, exp: 31800 },
+]
+
+export const globalList = [...friendList, ...globalOnlyUsers]
 
 export const requests = [
   { name: 'QuestCrafter', level: 12 },

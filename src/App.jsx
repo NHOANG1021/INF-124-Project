@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
 // Data
-import { friendList, requests, storeItems } from './constants/data'
+import { friendList, globalList, requests, storeItems } from './constants/data'
 
 // Hooks
 import { useAuth } from './hooks/useAuth'
@@ -80,6 +80,11 @@ function App() {
         : notificationCenter.items,
     [notificationCenter.items, notificationFilter],
   )
+
+  const handleLeaderboardTabChange = (nextTab) => {
+    setGlobalTab(nextTab)
+    setLeaderPage(1)
+  }
 
   // ── Render ─────────────────────────────────────────────────────────────────
   const themeClass = store.equippedTheme ? `profile-theme-${store.equippedTheme.art}` : ''
@@ -204,7 +209,8 @@ function App() {
               {currentPage === 'Leaderboard' && (
                 <LeaderboardPage
                   currentShown={globalTab}
-                  onTabChange={setGlobalTab}
+                  onTabChange={handleLeaderboardTabChange}
+                  globalUsers={globalList}
                   friends={filteredFriends}
                   currleadpage={leaderPage}
                   nextleadpage={setLeaderPage}
