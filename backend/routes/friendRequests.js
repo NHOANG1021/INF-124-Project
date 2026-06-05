@@ -1,20 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const sql = require("mssql/msnodesqlv8");
-const { connectDB } = require("../db");
+const pool = require("../db");
 const handleNotFound = require("./utils/handleNotFound");
 
 // GET all friend requests
 router.get("/", async (req, res) => {
   try {
-    const pool = await connectDB();
-
-    const result = await pool.request().query(`
+    const result = await pool.query(`
       SELECT *
       FROM FriendRequests
     `);
 
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get friend requests",
@@ -28,11 +25,8 @@ router.get("/received/:userID", async (req, res) => {
   try {
     const { userID } = req.params;
 
-    const pool = await connectDB();
 
-    const result = await pool.request()
-      .input("ReceiverID", sql.Int, userID)
-      .query(`
+    const result = await pool.query(`
         SELECT 
           fr.RequestID,
           fr.SenderID,
@@ -46,10 +40,11 @@ router.get("/received/:userID", async (req, res) => {
         FROM FriendRequests fr
         JOIN Users u
           ON fr.SenderID = u.UserID
-        WHERE fr.ReceiverID = @ReceiverID
-      `);
+        WHERE fr.ReceiverID = $1
+       `, [userID]
+      );
 
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get received friend requests",
@@ -63,11 +58,7 @@ router.get("/sent/:userID", async (req, res) => {
   try {
     const { userID } = req.params;
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("SenderID", sql.Int, userID)
-      .query(`
+    const result = await pool.query(`
         SELECT 
           fr.RequestID,
           fr.SenderID,
@@ -81,10 +72,10 @@ router.get("/sent/:userID", async (req, res) => {
         FROM FriendRequests fr
         JOIN Users u
           ON fr.ReceiverID = u.UserID
-        WHERE fr.SenderID = @SenderID
-      `);
+        WHERE fr.SenderID = $1
+      `, [userID]);
 
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get sent friend requests",
@@ -110,73 +101,58 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const pool = await connectDB();
-
     // Check if they are already friends
-    const existingFriend = await pool.request()
-      .input("SenderID", sql.Int, SenderID)
-      .input("ReceiverID", sql.Int, ReceiverID)
-      .query(`
+    const existingFriend = await pool.query(`
         SELECT *
         FROM Friends
-        WHERE (UserID = @SenderID AND FriendID = @ReceiverID)
-           OR (UserID = @ReceiverID AND FriendID = @SenderID)
-      `);
+        WHERE (UserID = $1 AND FriendID = $2)
+           OR (UserID = $2 AND FriendID = $1)
+      `, [SenderID, ReceiverID]);
 
-    if (existingFriend.recordset.length > 0) {
+    if (existingFriend.rows.length > 0) {
       return res.status(409).json({
         error: "Users are already friends"
       });
     }
 
     // Check if user exists
-    const usersCheck = await pool.request()
-      .input("SenderID", sql.Int, SenderID)
-      .input("ReceiverID", sql.Int, ReceiverID)
-      .query(`
+    const usersCheck = await pool.query(`
         SELECT *
         FROM Users
-        WHERE UserID = @SenderID
-            OR UserID = @ReceiverID
-      `);
+        WHERE UserID = $1
+           OR UserID = $2
+      `, [SenderID, ReceiverID]);
 
-    if (usersCheck.recordset.length < 2) {
+    if (usersCheck.rows.length < 2) {
     return res.status(404).json({
         error: "Sender or receiver user does not exist"
     });
     }
 
     // Check if request already exists
-    const existingRequest = await pool.request()
-      .input("SenderID", sql.Int, SenderID)
-      .input("ReceiverID", sql.Int, ReceiverID)
-      .query(`
+    const existingRequest = await pool.query(`
         SELECT *
         FROM FriendRequests
         WHERE Status = 0
           AND (
-            (SenderID = @SenderID AND ReceiverID = @ReceiverID)
+            (SenderID = $1 AND ReceiverID = $2)
             OR
-            (SenderID = @ReceiverID AND ReceiverID = @SenderID)
+            (SenderID = $2 AND ReceiverID = $1)
           )
-      `);
+      `, [SenderID, ReceiverID]);
 
-    if (existingRequest.recordset.length > 0) {
+    if (existingRequest.rows.length > 0) {
       return res.status(409).json({
         error: "A pending friend request already exists"
       });
     }
 
-    await pool.request()
-        .input("SenderID", sql.Int, SenderID)
-        .input("ReceiverID", sql.Int, ReceiverID)
-        .input("Status", sql.Int, 0)
-        .query(`
+    await pool.query(`
             INSERT INTO FriendRequests
             (SenderID, ReceiverID, Status)
             VALUES
-            (@SenderID, @ReceiverID, @Status)
-        `);
+            ($1, $2, $3)
+        `, [SenderID, ReceiverID, 0]);
 
     res.status(201).json({
       message: "Friend request sent successfully"
@@ -196,67 +172,53 @@ router.put("/:requestID/accept", async (req, res) => {
   try {
     const { requestID } = req.params;
 
-    const pool = await connectDB();
-
-    const requestResult = await pool.request()
-      .input("RequestID", sql.Int, requestID)
-      .query(`
+    const requestResult = await pool.query(`
         SELECT *
         FROM FriendRequests
-        WHERE RequestID = @RequestID
+        WHERE RequestID = $1
           AND Status = 0
-      `);
+      `, [requestID]);
 
-    if (requestResult.recordset.length === 0) {
+    if (requestResult.rows.length === 0) {
       return res.status(404).json({
         message: "Pending friend request not found"
       });
     }
 
-    const friendRequest = requestResult.recordset[0];
+    const friendRequest = requestResult.rows[0];
     const SenderID = friendRequest.SenderID;
     const ReceiverID = friendRequest.ReceiverID;
 
     // Update request status
-    await pool.request()
-      .input("RequestID", sql.Int, requestID)
-      .query(`
+    await pool.query(`
         UPDATE FriendRequests
         SET Status = 1,
             Updated_At = GETDATE()
-        WHERE RequestID = @RequestID
-      `);
+        WHERE RequestID = $1
+      `, [requestID]);
 
     // Add both directions to Friends table
-    await pool.request()
-      .input("UserID", sql.Int, SenderID)
-      .input("FriendID", sql.Int, ReceiverID)
-      .input("isFavorite", sql.Bit, false)
-      .query(`
+    await pool.query(`
         IF NOT EXISTS (
           SELECT 1 FROM Friends
-          WHERE UserID = @UserID AND FriendID = @FriendID
+          WHERE UserID = $1 AND FriendID = $2
         )
         BEGIN
           INSERT INTO Friends (UserID, FriendID, isFavorite)
-          VALUES (@UserID, @FriendID, @isFavorite)
+          VALUES ($1, $2, $3)
         END
-      `);
+      `, [SenderID, ReceiverID, false]);
 
-    await pool.request()
-      .input("UserID", sql.Int, ReceiverID)
-      .input("FriendID", sql.Int, SenderID)
-      .input("isFavorite", sql.Bit, false)
-      .query(`
+    await pool.query(`
         IF NOT EXISTS (
           SELECT 1 FROM Friends
-          WHERE UserID = @UserID AND FriendID = @FriendID
+          WHERE UserID = $1 AND FriendID = $2
         )
         BEGIN
           INSERT INTO Friends (UserID, FriendID, isFavorite)
-          VALUES (@UserID, @FriendID, @isFavorite)
+          VALUES ($1, $2, $3)
         END
-      `);
+      `, [ReceiverID, SenderID, false]);
 
     res.status(200).json({
       message: "Friend request accepted successfully"
@@ -276,17 +238,13 @@ router.put("/:requestID/reject", async (req, res) => {
   try {
     const { requestID } = req.params;
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("RequestID", sql.Int, requestID)
-      .query(`
+    const result = await pool.query(`
         UPDATE FriendRequests
         SET Status = 2,
             Updated_At = GETDATE()
-        WHERE RequestID = @RequestID
+        WHERE RequestID = $1
           AND Status = 0
-      `);
+      `, [requestID]);
 
     if (handleNotFound(result, res, "Pending friend request")) return;
 
@@ -308,14 +266,11 @@ router.delete("/:requestID", async (req, res) => {
   try {
     const { requestID } = req.params;
 
-    const pool = await connectDB();
 
-    const result = await pool.request()
-      .input("RequestID", sql.Int, requestID)
-      .query(`
+    const result = await pool.query(`
         DELETE FROM FriendRequests
-        WHERE RequestID = @RequestID
-      `);
+        WHERE RequestID = $1
+      `, [requestID]);
 
     if (handleNotFound(result, res, "Friend request")) return;
 

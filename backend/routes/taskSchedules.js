@@ -1,33 +1,30 @@
 const express = require("express");
 const router = express.Router();
-const sql = require("mssql/msnodesqlv8");
-const { connectDB } = require("../db");
+const pool = require("../db");
 const handleNotFound = require("./utils/handleNotFound");
 
 // GET all task schedules
 router.get("/", async (req, res) => {
   try {
-    const pool = await connectDB();
-
-    const result = await pool.request().query(`
-      SELECT 
-        ts.ScheduleID,
-        ts.TaskID,
-        ts.UserID,
-        ts.ScheduleDate,
-        ts.DayofWeekID,
-        ts.Created_At,
-        t.Title,
-        d.Day
+    const result = await pool.query(`
+      SELECT
+        ts."ScheduleID",
+        ts."TaskID",
+        ts."UserID",
+        ts."ScheduleDate",
+        ts."DayofWeekID",
+        ts."Created_At",
+        t."Title",
+        d."Day"
       FROM TaskSchedules ts
       JOIN Task t
-        ON ts.TaskID = t.TaskID
+        ON ts."TaskID" = t."TaskID"
       JOIN DayOfWeek d
-        ON ts.DayofWeekID = d.DayID
-      ORDER BY ts.ScheduleDate ASC
+        ON ts."DayofWeekID" = d."DayID"
+      ORDER BY ts."ScheduleDate" ASC
     `);
 
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get task schedules",
@@ -41,32 +38,31 @@ router.get("/user/:userID", async (req, res) => {
   try {
     const { userID } = req.params;
 
-    const pool = await connectDB();
+    const result = await pool.query(
+      `
+      SELECT
+        ts."ScheduleID",
+        ts."TaskID",
+        ts."UserID",
+        ts."ScheduleDate",
+        ts."DayofWeekID",
+        ts."Created_At",
+        t."Title",
+        t."IsCompleted",
+        t."DueDate",
+        d."Day"
+      FROM TaskSchedules ts
+      JOIN Task t
+        ON ts."TaskID" = t."TaskID"
+      JOIN DayOfWeek d
+        ON ts."DayofWeekID" = d."DayID"
+      WHERE ts."UserID" = $1
+      ORDER BY ts."ScheduleDate" ASC
+      `,
+      [userID]
+    );
 
-    const result = await pool.request()
-      .input("UserID", sql.Int, userID)
-      .query(`
-        SELECT 
-          ts.ScheduleID,
-          ts.TaskID,
-          ts.UserID,
-          ts.ScheduleDate,
-          ts.DayofWeekID,
-          ts.Created_At,
-          t.Title,
-          t.IsCompleted,
-          t.DueDate,
-          d.Day
-        FROM TaskSchedules ts
-        JOIN Task t
-          ON ts.TaskID = t.TaskID
-        JOIN DayOfWeek d
-          ON ts.DayofWeekID = d.DayID
-        WHERE ts.UserID = @UserID
-        ORDER BY ts.ScheduleDate ASC
-      `);
-
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get schedules for user",
@@ -80,30 +76,29 @@ router.get("/task/:taskID", async (req, res) => {
   try {
     const { taskID } = req.params;
 
-    const pool = await connectDB();
+    const result = await pool.query(
+      `
+      SELECT
+        ts."ScheduleID",
+        ts."TaskID",
+        ts."UserID",
+        ts."ScheduleDate",
+        ts."DayofWeekID",
+        ts."Created_At",
+        t."Title",
+        d."Day"
+      FROM TaskSchedules ts
+      JOIN Task t
+        ON ts."TaskID" = t."TaskID"
+      JOIN DayOfWeek d
+        ON ts."DayofWeekID" = d."DayID"
+      WHERE ts."TaskID" = $1
+      ORDER BY ts."ScheduleDate" ASC
+      `,
+      [taskID]
+    );
 
-    const result = await pool.request()
-      .input("TaskID", sql.Int, taskID)
-      .query(`
-        SELECT 
-          ts.ScheduleID,
-          ts.TaskID,
-          ts.UserID,
-          ts.ScheduleDate,
-          ts.DayofWeekID,
-          ts.Created_At,
-          t.Title,
-          d.Day
-        FROM TaskSchedules ts
-        JOIN Task t
-          ON ts.TaskID = t.TaskID
-        JOIN DayOfWeek d
-          ON ts.DayofWeekID = d.DayID
-        WHERE ts.TaskID = @TaskID
-        ORDER BY ts.ScheduleDate ASC
-      `);
-
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get schedules for task",
@@ -123,68 +118,75 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const pool = await connectDB();
+    const taskCheck = await pool.query(
+      `
+      SELECT "TaskID"
+      FROM Task
+      WHERE "TaskID" = $1
+      `,
+      [TaskID]
+    );
 
-    // Check if task exists
-    const taskCheck = await pool.request()
-      .input("TaskID", sql.Int, TaskID)
-      .query(`
-        SELECT TaskID
-        FROM Task
-        WHERE TaskID = @TaskID
-      `);
-
-    if (taskCheck.recordset.length === 0) {
+    if (taskCheck.rows.length === 0) {
       return res.status(404).json({
         error: "Task does not exist"
       });
     }
 
-    // Check if user exists
-    const userCheck = await pool.request()
-      .input("UserID", sql.Int, UserID)
-      .query(`
-        SELECT UserID
-        FROM Users
-        WHERE UserID = @UserID
-      `);
+    const userCheck = await pool.query(
+      `
+      SELECT "UserID"
+      FROM Users
+      WHERE "UserID" = $1
+      `,
+      [UserID]
+    );
 
-    if (userCheck.recordset.length === 0) {
+    if (userCheck.rows.length === 0) {
       return res.status(404).json({
         error: "User does not exist"
       });
     }
 
-    // Check if day exists
-    const dayCheck = await pool.request()
-      .input("DayofWeekID", sql.Int, DayofWeekID)
-      .query(`
-        SELECT DayID
-        FROM DayOfWeek
-        WHERE DayID = @DayofWeekID
-      `);
+    const dayCheck = await pool.query(
+      `
+      SELECT "DayID"
+      FROM DayOfWeek
+      WHERE "DayID" = $1
+      `,
+      [DayofWeekID]
+    );
 
-    if (dayCheck.recordset.length === 0) {
+    if (dayCheck.rows.length === 0) {
       return res.status(404).json({
         error: "Day of week does not exist"
       });
     }
 
-    await pool.request()
-      .input("TaskID", sql.Int, TaskID)
-      .input("UserID", sql.Int, UserID)
-      .input("ScheduleDate", sql.Date, ScheduleDate)
-      .input("DayofWeekID", sql.Int, DayofWeekID)
-      .query(`
-        INSERT INTO TaskSchedules
-        (TaskID, UserID, ScheduleDate, DayofWeekID, Created_At)
-        VALUES
-        (@TaskID, @UserID, @ScheduleDate, @DayofWeekID, GETDATE())
-      `);
+    await pool.query(
+      `
+      INSERT INTO TaskSchedules
+      (
+        "TaskID",
+        "UserID",
+        "ScheduleDate",
+        "DayofWeekID",
+        "Created_At"
+      )
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+      `,
+      [
+        TaskID,
+        UserID,
+        ScheduleDate,
+        DayofWeekID
+      ]
+    );
 
     res.status(201).json({
       message: "Task schedule created successfully"
     });
+
   } catch (err) {
     console.error("Error creating task schedule:", err);
 
@@ -207,73 +209,75 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    const pool = await connectDB();
+    const taskCheck = await pool.query(
+      `
+      SELECT "TaskID"
+      FROM Task
+      WHERE "TaskID" = $1
+      `,
+      [TaskID]
+    );
 
-    // Check if task exists
-    const taskCheck = await pool.request()
-      .input("TaskID", sql.Int, TaskID)
-      .query(`
-        SELECT TaskID
-        FROM Task
-        WHERE TaskID = @TaskID
-      `);
-
-    if (taskCheck.recordset.length === 0) {
+    if (taskCheck.rows.length === 0) {
       return res.status(404).json({
         error: "Task does not exist"
       });
     }
 
-    // Check if user exists
-    const userCheck = await pool.request()
-      .input("UserID", sql.Int, UserID)
-      .query(`
-        SELECT UserID
-        FROM Users
-        WHERE UserID = @UserID
-      `);
+    const userCheck = await pool.query(
+      `
+      SELECT "UserID"
+      FROM Users
+      WHERE "UserID" = $1
+      `,
+      [UserID]
+    );
 
-    if (userCheck.recordset.length === 0) {
+    if (userCheck.rows.length === 0) {
       return res.status(404).json({
         error: "User does not exist"
       });
     }
 
-    // Check if day exists
-    const dayCheck = await pool.request()
-      .input("DayofWeekID", sql.Int, DayofWeekID)
-      .query(`
-        SELECT DayID
-        FROM DayOfWeek
-        WHERE DayID = @DayofWeekID
-      `);
+    const dayCheck = await pool.query(
+      `
+      SELECT "DayID"
+      FROM DayOfWeek
+      WHERE "DayID" = $1
+      `,
+      [DayofWeekID]
+    );
 
-    if (dayCheck.recordset.length === 0) {
+    if (dayCheck.rows.length === 0) {
       return res.status(404).json({
         error: "Day of week does not exist"
       });
     }
 
-    const result = await pool.request()
-      .input("ScheduleID", sql.Int, id)
-      .input("TaskID", sql.Int, TaskID)
-      .input("UserID", sql.Int, UserID)
-      .input("ScheduleDate", sql.Date, ScheduleDate)
-      .input("DayofWeekID", sql.Int, DayofWeekID)
-      .query(`
-        UPDATE TaskSchedules
-        SET TaskID = @TaskID,
-            UserID = @UserID,
-            ScheduleDate = @ScheduleDate,
-            DayofWeekID = @DayofWeekID
-        WHERE ScheduleID = @ScheduleID
-      `);
+    const result = await pool.query(
+      `
+      UPDATE TaskSchedules
+      SET "TaskID" = $1,
+          "UserID" = $2,
+          "ScheduleDate" = $3,
+          "DayofWeekID" = $4
+      WHERE "ScheduleID" = $5
+      `,
+      [
+        TaskID,
+        UserID,
+        ScheduleDate,
+        DayofWeekID,
+        id
+      ]
+    );
 
     if (handleNotFound(result, res, "Task schedule")) return;
 
     res.status(200).json({
       message: "Task schedule updated successfully"
     });
+
   } catch (err) {
     console.error("Error updating task schedule:", err);
 
@@ -289,20 +293,20 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("ScheduleID", sql.Int, id)
-      .query(`
-        DELETE FROM TaskSchedules
-        WHERE ScheduleID = @ScheduleID
-      `);
+    const result = await pool.query(
+      `
+      DELETE FROM TaskSchedules
+      WHERE "ScheduleID" = $1
+      `,
+      [id]
+    );
 
     if (handleNotFound(result, res, "Task schedule")) return;
 
     res.status(200).json({
       message: "Task schedule deleted successfully"
     });
+
   } catch (err) {
     console.error("Error deleting task schedule:", err);
 

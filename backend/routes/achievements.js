@@ -1,21 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const { connectDB } = require("../db");
-const sql = require("mssql/msnodesqlv8");
+const pool = require("../db");
 const handleNotFound = require("./utils/handleNotFound");
 
 
 // GET all Achievements
 router.get("/", async (req, res) => {
   try {
-    const pool = await connectDB();
 
-    const result = await pool.request().query(`
+    const result = await pool.query(`
       SELECT *
       FROM Achievements
     `);
 
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get users",
@@ -30,19 +28,14 @@ router.post("/", async (req, res) => {
   try {
     const { AchievementName, Description, XpReward, CoinReward } = req.body;
 
-    const pool = await connectDB();
 
-    await pool.request()
-      .input("AchievementName", sql.VarChar, AchievementName)
-      .input("Description", sql.VarChar, Description)
-      .input("XpReward", sql.Int, XpReward)
-      .input("CoinReward", sql.Int, CoinReward)
-      .query(`
+    await pool.query(
+      `
         INSERT INTO Achievements 
         (AchievementName, Description, XpReward, CoinReward)
         VALUES 
-        (@AchievementName, @Description, @XpReward, @CoinReward)
-      `);
+        ($1, $2, $3, $4)
+      `, [AchievementName, Description, XpReward, CoinReward]);
 
     res.status(201).json({ message: "Achievement added successfully" });
   } catch (err) {
@@ -57,14 +50,11 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const pool = await connectDB();
     
-    const result = await pool.request()
-      .input("AchievementID", sql.Int, id)
-      .query(`
+    const result = await pool.query(`
         DELETE FROM Achievements
-        WHERE AchievementID = @AchievementID
-      `);
+        WHERE AchievementID = $1
+      `,[id]);
     if (handleNotFound(result, res, "Achievement")) return;
 
     res.json({ message: "Achievement deleted successfully" });
@@ -83,22 +73,15 @@ router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { AchievementName, Description, XpReward, CoinReward } = req.body;
-    const pool = await connectDB();
 
-    const result = await pool.request()
-      .input("AchievementID", sql.Int, id)
-      .input("AchievementName", sql.VarChar, AchievementName)
-      .input("Description", sql.VarChar, Description)
-      .input("XpReward", sql.Int, XpReward)
-      .input("CoinReward", sql.Int, CoinReward)
-      .query(`
+    const result = await pool.query(`
         UPDATE Achievements 
-        SET AchievementName = @AchievementName,
-            Description = @Description,
-            XpReward = @XpReward,
-            CoinReward = @CoinReward
-        WHERE AchievementID = @AchievementID 
-      `);
+        SET AchievementName = $1,
+            Description = $2,
+            XpReward = $3,
+            CoinReward = $4
+        WHERE AchievementID = $5
+      `, [AchievementName, Description, XpReward, CoinReward, id]);
     
     if (handleNotFound(result, res, "Achievement")) return;
 

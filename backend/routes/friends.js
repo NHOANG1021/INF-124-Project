@@ -1,20 +1,18 @@
 const express = require("express");
 const router = express.Router();
-const sql = require("mssql/msnodesqlv8");
-const { connectDB } = require("../db");
+const pool = require("../db");
 const handleNotFound = require("./utils/handleNotFound");
 
 // GET all friends
 router.get("/", async (req, res) => {
   try {
-    const pool = await connectDB();
 
-    const result = await pool.request().query(`
+    const result = await pool.query(`
       SELECT *
       FROM Friends
     `);
 
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get friends",
@@ -28,11 +26,7 @@ router.get("/user/:userID", async (req, res) => {
   try {
     const { userID } = req.params;
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("UserID", sql.Int, userID)
-      .query(`
+    const result = await pool.query(`
         SELECT 
           f.UserID,
           f.FriendID,
@@ -46,10 +40,10 @@ router.get("/user/:userID", async (req, res) => {
         FROM Friends f
         JOIN Users u
           ON f.FriendID = u.UserID
-        WHERE f.UserID = @UserID
-      `);
+        WHERE f.UserID = $1
+      `, [userID]);
 
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get user's friends",
@@ -64,18 +58,12 @@ router.put("/:userID/:friendID/favorite", async (req, res) => {
     const { userID, friendID } = req.params;
     const { isFavorite } = req.body;
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("UserID", sql.Int, userID)
-      .input("FriendID", sql.Int, friendID)
-      .input("isFavorite", sql.Bit, isFavorite)
-      .query(`
+    const result = await pool.query(`
         UPDATE Friends
-        SET isFavorite = @isFavorite
-        WHERE UserID = @UserID
-          AND FriendID = @FriendID
-      `);
+        SET isFavorite = $1
+        WHERE UserID = $2
+          AND FriendID = $3
+      `, [isFavorite, userID, friendID]);
 
     if (handleNotFound(result, res, "Friend")) return;
 
@@ -97,16 +85,12 @@ router.delete("/:userID/:friendID", async (req, res) => {
   try {
     const { userID, friendID } = req.params;
 
-    const pool = await connectDB();
 
-    const result = await pool.request()
-      .input("UserID", sql.Int, userID)
-      .input("FriendID", sql.Int, friendID)
-      .query(`
+    const result = await pool.query(`
         DELETE FROM Friends
-        WHERE (UserID = @UserID AND FriendID = @FriendID)
-           OR (UserID = @FriendID AND FriendID = @UserID)
-      `);
+        WHERE (UserID = $1 AND FriendID = $2)
+           OR (UserID = $2 AND FriendID = $1)
+      `, [userID, friendID]);
 
     if (result.rowsAffected[0] === 0) {
       return res.status(404).json({

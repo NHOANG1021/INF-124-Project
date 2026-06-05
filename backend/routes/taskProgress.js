@@ -1,31 +1,28 @@
 const express = require("express");
 const router = express.Router();
-const sql = require("mssql/msnodesqlv8");
-const { connectDB } = require("../db");
+const pool = require("../db");
 const handleNotFound = require("./utils/handleNotFound");
 
 // GET all task progress records
 router.get("/", async (req, res) => {
   try {
-    const pool = await connectDB();
-
-    const result = await pool.request().query(`
-      SELECT 
-        tp.ProgressID,
-        tp.TaskID,
-        tp.UserID,
-        tp.ProgressValue,
-        tp.TargetValue,
-        tp.Updated_At,
-        t.Title,
-        t.IsCompleted
+    const result = await pool.query(`
+      SELECT
+        tp."ProgressID",
+        tp."TaskID",
+        tp."UserID",
+        tp."ProgressValue",
+        tp."TargetValue",
+        tp."Updated_At",
+        t."Title",
+        t."IsCompleted"
       FROM TaskProgress tp
       JOIN Task t
-        ON tp.TaskID = t.TaskID
-      ORDER BY tp.Updated_At DESC
+        ON tp."TaskID" = t."TaskID"
+      ORDER BY tp."Updated_At" DESC
     `);
 
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get task progress",
@@ -39,31 +36,30 @@ router.get("/user/:userID", async (req, res) => {
   try {
     const { userID } = req.params;
 
-    const pool = await connectDB();
+    const result = await pool.query(
+      `
+      SELECT
+        tp."ProgressID",
+        tp."TaskID",
+        tp."UserID",
+        tp."ProgressValue",
+        tp."TargetValue",
+        tp."Updated_At",
+        t."Title",
+        t."IsCompleted",
+        t."DueDate",
+        t."XpReward",
+        t."CoinReward"
+      FROM TaskProgress tp
+      JOIN Task t
+        ON tp."TaskID" = t."TaskID"
+      WHERE tp."UserID" = $1
+      ORDER BY tp."Updated_At" DESC
+      `,
+      [userID]
+    );
 
-    const result = await pool.request()
-      .input("UserID", sql.Int, userID)
-      .query(`
-        SELECT 
-          tp.ProgressID,
-          tp.TaskID,
-          tp.UserID,
-          tp.ProgressValue,
-          tp.TargetValue,
-          tp.Updated_At,
-          t.Title,
-          t.IsCompleted,
-          t.DueDate,
-          t.XpReward,
-          t.CoinReward
-        FROM TaskProgress tp
-        JOIN Task t
-          ON tp.TaskID = t.TaskID
-        WHERE tp.UserID = @UserID
-        ORDER BY tp.Updated_At DESC
-      `);
-
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get progress for user",
@@ -77,27 +73,26 @@ router.get("/task/:taskID", async (req, res) => {
   try {
     const { taskID } = req.params;
 
-    const pool = await connectDB();
+    const result = await pool.query(
+      `
+      SELECT
+        tp."ProgressID",
+        tp."TaskID",
+        tp."UserID",
+        tp."ProgressValue",
+        tp."TargetValue",
+        tp."Updated_At",
+        t."Title",
+        t."IsCompleted"
+      FROM TaskProgress tp
+      JOIN Task t
+        ON tp."TaskID" = t."TaskID"
+      WHERE tp."TaskID" = $1
+      `,
+      [taskID]
+    );
 
-    const result = await pool.request()
-      .input("TaskID", sql.Int, taskID)
-      .query(`
-        SELECT 
-          tp.ProgressID,
-          tp.TaskID,
-          tp.UserID,
-          tp.ProgressValue,
-          tp.TargetValue,
-          tp.Updated_At,
-          t.Title,
-          t.IsCompleted
-        FROM TaskProgress tp
-        JOIN Task t
-          ON tp.TaskID = t.TaskID
-        WHERE tp.TaskID = @TaskID
-      `);
-
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({
       message: "Failed to get progress for task",
@@ -117,72 +112,76 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const pool = await connectDB();
+    const taskCheck = await pool.query(
+      `
+      SELECT "TaskID"
+      FROM Task
+      WHERE "TaskID" = $1
+      `,
+      [TaskID]
+    );
 
-    // Check if task exists
-    const taskCheck = await pool.request()
-      .input("TaskID", sql.Int, TaskID)
-      .query(`
-        SELECT TaskID
-        FROM Task
-        WHERE TaskID = @TaskID
-      `);
-
-    if (taskCheck.recordset.length === 0) {
+    if (taskCheck.rows.length === 0) {
       return res.status(404).json({
         error: "Task does not exist"
       });
     }
 
-    // Check if user exists
-    const userCheck = await pool.request()
-      .input("UserID", sql.Int, UserID)
-      .query(`
-        SELECT UserID
-        FROM Users
-        WHERE UserID = @UserID
-      `);
+    const userCheck = await pool.query(
+      `
+      SELECT "UserID"
+      FROM Users
+      WHERE "UserID" = $1
+      `,
+      [UserID]
+    );
 
-    if (userCheck.recordset.length === 0) {
+    if (userCheck.rows.length === 0) {
       return res.status(404).json({
         error: "User does not exist"
       });
     }
 
-    // Check if progress already exists for this user/task
-    const existingProgress = await pool.request()
-      .input("TaskID", sql.Int, TaskID)
-      .input("UserID", sql.Int, UserID)
-      .query(`
-        SELECT ProgressID
-        FROM TaskProgress
-        WHERE TaskID = @TaskID
-          AND UserID = @UserID
-      `);
+    const existingProgress = await pool.query(
+      `
+      SELECT "ProgressID"
+      FROM TaskProgress
+      WHERE "TaskID" = $1
+        AND "UserID" = $2
+      `,
+      [TaskID, UserID]
+    );
 
-    if (existingProgress.recordset.length > 0) {
+    if (existingProgress.rows.length > 0) {
       return res.status(409).json({
         error: "Progress already exists for this user and task"
       });
     }
 
-    const startingProgress = ProgressValue ?? 0;
-
-    await pool.request()
-      .input("TaskID", sql.Int, TaskID)
-      .input("UserID", sql.Int, UserID)
-      .input("ProgressValue", sql.Int, startingProgress)
-      .input("TargetValue", sql.Int, TargetValue)
-      .query(`
-        INSERT INTO TaskProgress
-        (TaskID, UserID, ProgressValue, TargetValue, Updated_At)
-        VALUES
-        (@TaskID, @UserID, @ProgressValue, @TargetValue, GETDATE())
-      `);
+    await pool.query(
+      `
+      INSERT INTO TaskProgress
+      (
+        "TaskID",
+        "UserID",
+        "ProgressValue",
+        "TargetValue",
+        "Updated_At"
+      )
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+      `,
+      [
+        TaskID,
+        UserID,
+        ProgressValue ?? 0,
+        TargetValue
+      ]
+    );
 
     res.status(201).json({
       message: "Task progress created successfully"
     });
+
   } catch (err) {
     console.error("Error creating task progress:", err);
 
@@ -193,7 +192,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// PUT update task progress by ProgressID
+// PUT update task progress
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -205,49 +204,47 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("ProgressID", sql.Int, id)
-      .input("ProgressValue", sql.Int, ProgressValue)
-      .input("TargetValue", sql.Int, TargetValue)
-      .query(`
-        UPDATE TaskProgress
-        SET ProgressValue = @ProgressValue,
-            TargetValue = @TargetValue,
-            Updated_At = GETDATE()
-        WHERE ProgressID = @ProgressID
-      `);
+    const result = await pool.query(
+      `
+      UPDATE TaskProgress
+      SET "ProgressValue" = $1,
+          "TargetValue" = $2,
+          "Updated_At" = CURRENT_TIMESTAMP
+      WHERE "ProgressID" = $3
+      `,
+      [ProgressValue, TargetValue, id]
+    );
 
     if (handleNotFound(result, res, "Task progress")) return;
 
-    // If progress reaches target, mark task completed
-    await pool.request()
-      .input("ProgressID", sql.Int, id)
-      .query(`
-        UPDATE Task
-        SET IsCompleted = 1,
-            CompletedAt = GETDATE(),
-            Updated_At = GETDATE()
-        WHERE TaskID = (
-          SELECT TaskID
-          FROM TaskProgress
-          WHERE ProgressID = @ProgressID
-        )
-        AND (
-          SELECT ProgressValue
-          FROM TaskProgress
-          WHERE ProgressID = @ProgressID
-        ) >= (
-          SELECT TargetValue
-          FROM TaskProgress
-          WHERE ProgressID = @ProgressID
-        )
-      `);
+    await pool.query(
+      `
+      UPDATE Task
+      SET "IsCompleted" = TRUE,
+          "CompletedAt" = CURRENT_TIMESTAMP,
+          "Updated_At" = CURRENT_TIMESTAMP
+      WHERE "TaskID" = (
+        SELECT "TaskID"
+        FROM TaskProgress
+        WHERE "ProgressID" = $1
+      )
+      AND (
+        SELECT "ProgressValue"
+        FROM TaskProgress
+        WHERE "ProgressID" = $1
+      ) >= (
+        SELECT "TargetValue"
+        FROM TaskProgress
+        WHERE "ProgressID" = $1
+      )
+      `,
+      [id]
+    );
 
     res.status(200).json({
       message: "Task progress updated successfully"
     });
+
   } catch (err) {
     console.error("Error updating task progress:", err);
 
@@ -258,7 +255,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// PATCH increment progress by ProgressID
+// PATCH increment progress
 router.patch("/:id/increment", async (req, res) => {
   try {
     const { id } = req.params;
@@ -266,51 +263,51 @@ router.patch("/:id/increment", async (req, res) => {
 
     const incrementAmount = Amount ?? 1;
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("ProgressID", sql.Int, id)
-      .input("Amount", sql.Int, incrementAmount)
-      .query(`
-        UPDATE TaskProgress
-        SET ProgressValue = 
-          CASE
-            WHEN ProgressValue + @Amount > TargetValue THEN TargetValue
-            ELSE ProgressValue + @Amount
-          END,
-          Updated_At = GETDATE()
-        WHERE ProgressID = @ProgressID
-      `);
+    const result = await pool.query(
+      `
+      UPDATE TaskProgress
+      SET "ProgressValue" =
+        CASE
+          WHEN "ProgressValue" + $1 > "TargetValue"
+            THEN "TargetValue"
+          ELSE "ProgressValue" + $1
+        END,
+        "Updated_At" = CURRENT_TIMESTAMP
+      WHERE "ProgressID" = $2
+      `,
+      [incrementAmount, id]
+    );
 
     if (handleNotFound(result, res, "Task progress")) return;
 
-    // Mark task completed if progress reached target
-    await pool.request()
-      .input("ProgressID", sql.Int, id)
-      .query(`
-        UPDATE Task
-        SET IsCompleted = 1,
-            CompletedAt = GETDATE(),
-            Updated_At = GETDATE()
-        WHERE TaskID = (
-          SELECT TaskID
-          FROM TaskProgress
-          WHERE ProgressID = @ProgressID
-        )
-        AND (
-          SELECT ProgressValue
-          FROM TaskProgress
-          WHERE ProgressID = @ProgressID
-        ) >= (
-          SELECT TargetValue
-          FROM TaskProgress
-          WHERE ProgressID = @ProgressID
-        )
-      `);
+    await pool.query(
+      `
+      UPDATE Task
+      SET "IsCompleted" = TRUE,
+          "CompletedAt" = CURRENT_TIMESTAMP,
+          "Updated_At" = CURRENT_TIMESTAMP
+      WHERE "TaskID" = (
+        SELECT "TaskID"
+        FROM TaskProgress
+        WHERE "ProgressID" = $1
+      )
+      AND (
+        SELECT "ProgressValue"
+        FROM TaskProgress
+        WHERE "ProgressID" = $1
+      ) >= (
+        SELECT "TargetValue"
+        FROM TaskProgress
+        WHERE "ProgressID" = $1
+      )
+      `,
+      [id]
+    );
 
     res.status(200).json({
       message: "Task progress incremented successfully"
     });
+
   } catch (err) {
     console.error("Error incrementing task progress:", err);
 
@@ -321,41 +318,42 @@ router.patch("/:id/increment", async (req, res) => {
   }
 });
 
-// PATCH complete checkbox task
+// PATCH complete task
 router.patch("/:id/complete", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("ProgressID", sql.Int, id)
-      .query(`
-        UPDATE TaskProgress
-        SET ProgressValue = TargetValue,
-            Updated_At = GETDATE()
-        WHERE ProgressID = @ProgressID
-      `);
+    const result = await pool.query(
+      `
+      UPDATE TaskProgress
+      SET "ProgressValue" = "TargetValue",
+          "Updated_At" = CURRENT_TIMESTAMP
+      WHERE "ProgressID" = $1
+      `,
+      [id]
+    );
 
     if (handleNotFound(result, res, "Task progress")) return;
 
-    await pool.request()
-      .input("ProgressID", sql.Int, id)
-      .query(`
-        UPDATE Task
-        SET IsCompleted = 1,
-            CompletedAt = GETDATE(),
-            Updated_At = GETDATE()
-        WHERE TaskID = (
-          SELECT TaskID
-          FROM TaskProgress
-          WHERE ProgressID = @ProgressID
-        )
-      `);
+    await pool.query(
+      `
+      UPDATE Task
+      SET "IsCompleted" = TRUE,
+          "CompletedAt" = CURRENT_TIMESTAMP,
+          "Updated_At" = CURRENT_TIMESTAMP
+      WHERE "TaskID" = (
+        SELECT "TaskID"
+        FROM TaskProgress
+        WHERE "ProgressID" = $1
+      )
+      `,
+      [id]
+    );
 
     res.status(200).json({
       message: "Task marked as complete"
     });
+
   } catch (err) {
     console.error("Error completing task progress:", err);
 
@@ -371,20 +369,20 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("ProgressID", sql.Int, id)
-      .query(`
-        DELETE FROM TaskProgress
-        WHERE ProgressID = @ProgressID
-      `);
+    const result = await pool.query(
+      `
+      DELETE FROM TaskProgress
+      WHERE "ProgressID" = $1
+      `,
+      [id]
+    );
 
     if (handleNotFound(result, res, "Task progress")) return;
 
     res.status(200).json({
       message: "Task progress deleted successfully"
     });
+
   } catch (err) {
     console.error("Error deleting task progress:", err);
 

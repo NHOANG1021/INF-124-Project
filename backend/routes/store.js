@@ -1,27 +1,18 @@
 const express = require("express");
 const router = express.Router();
-const sql = require("mssql/msnodesqlv8");
-const { connectDB } = require("../db");
+const pool = require("../db");
 const handleNotFound = require("./utils/handleNotFound");
 
 // GET all store items
 router.get("/", async (req, res) => {
   try {
-    const pool = await connectDB();
-
-    const result = await pool.request().query(`
-      SELECT
-        ItemID,
-        ItemName,
-        ItemType,
-        Price,
-        Art,
-        Description
+    const result = await pool.query(`
+      SELECT *
       FROM Store
       ORDER BY ItemID
     `);
 
-    res.json(result.recordset);
+    res.json(result.rows);
   } catch (err) {
     console.error("Error getting store items:", err);
 
@@ -63,6 +54,7 @@ router.post("/", async (req, res) => {
       message: "Store item added successfully",
       item: result.recordset[0],
     });
+
   } catch (err) {
     console.error("Error adding store item:", err);
 
@@ -85,25 +77,16 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("ItemID", sql.Int, id)
-      .input("ItemName", sql.VarChar, ItemName)
-      .input("ItemType", sql.Int, ItemType)
-      .input("Price", sql.Int, Price)
-      .input("Art", sql.VarChar, Art ?? null)
-      .input("Description", sql.VarChar, Description ?? null)
-      .query(`
-        UPDATE Store
-        SET ItemName = @ItemName,
-            ItemType = @ItemType,
-            Price = @Price,
-            Art = @Art,
-            Description = @Description
-        OUTPUT INSERTED.ItemID, INSERTED.ItemName, INSERTED.ItemType, INSERTED.Price, INSERTED.Art, INSERTED.Description
-        WHERE ItemID = @ItemID
-      `);
+    const result = await pool.query(
+      `
+      UPDATE Store
+      SET "ItemName" = $1,
+          "ItemType" = $2,
+          "Price" = $3
+      WHERE "ItemID" = $4
+      `,
+      [ItemName, ItemType, Price, id]
+    );
 
     if (handleNotFound(result, res, "Store item")) return;
 
@@ -111,6 +94,7 @@ router.put("/:id", async (req, res) => {
       message: "Store item updated successfully",
       item: result.recordset[0],
     });
+
   } catch (err) {
     console.error("Error updating store item:", err);
 
@@ -126,20 +110,20 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const pool = await connectDB();
-
-    const result = await pool.request()
-      .input("ItemID", sql.Int, id)
-      .query(`
-        DELETE FROM Store
-        WHERE ItemID = @ItemID
-      `);
+    const result = await pool.query(
+      `
+      DELETE FROM Store
+      WHERE "ItemID" = $1
+      `,
+      [id]
+    );
 
     if (handleNotFound(result, res, "Store item")) return;
 
     res.status(200).json({
       message: "Store item deleted successfully"
     });
+
   } catch (err) {
     console.error("Error deleting store item:", err);
 
