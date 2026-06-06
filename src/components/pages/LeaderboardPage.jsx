@@ -23,7 +23,7 @@ export function LeaderboardPage({
     <section className="LeaderboardPage">
       <div className="section-header split">
         <div>
-          <p className="section-kicker">Statistics</p>
+          {/* <p className="section-kicker">Statistics</p> */}
           <h2>Leaderboard</h2>
         </div>
         <div className="chip-row">

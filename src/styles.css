@@ -99,7 +99,7 @@ button {
 }
 .profile-card h3,
 .inventory-grid h4,
-.statistics-card h3 {
+/* .statistics-card h3 {
   margin-top: 0;
 }
 .statistics-card {
@@ -109,7 +109,7 @@ button {
   border: 1px solid var(--line);
   width: 100%;
   min-height: 100%;
-}
+} */
 
 .inventory-grid {
   display: grid;

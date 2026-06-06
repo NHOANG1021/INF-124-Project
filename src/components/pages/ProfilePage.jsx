@@ -85,7 +85,7 @@ export function ProfilePage({ inventory, equippedItems, onEquipItem }) {
         </div>
       </div>
 
-      <div className="statistics-card">
+      {/* <div className="statistics-card">
         <h3>Statistics</h3>
         <p>
           Task Completed: <b>458</b>
@@ -99,7 +99,7 @@ export function ProfilePage({ inventory, equippedItems, onEquipItem }) {
         <p>
           Total Number of friends: <b>3</b>
         </p>
-      </div>
+      </div> */}
     </section>
   )
 }
