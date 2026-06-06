@@ -13,6 +13,8 @@ const friendsRoutes = require("./routes/friends");
 const friendRequestRoutes = require("./routes/friendRequests");
 const notificationRoutes = require("./routes/notification");
 const inventoryRoutes = require("./routes/inventory");
+const leaderboardRoutes = require("./routes/leaderboard");
+
 require("dotenv").config();
 
 const app = express();
@@ -76,6 +78,8 @@ app.use("/api/friends", friendsRoutes);
 app.use("/api/friendRequests", friendRequestRoutes);
 app.use("/api/notification", notificationRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
+
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import '../../styles/pages/auth.css'
 
 export function AuthCard({
@@ -16,7 +17,7 @@ export function AuthCard({
 
   return (
     <div className="auth-card auth-card-large">
-        <form className="auth-form">
+      <form className="auth-form">
         {authFeedback && <p className="auth-feedback">{authFeedback}</p>}
 
         {isLogin ? (
@@ -42,6 +43,9 @@ export function AuthCard({
 }
 
 function LoginFields({ form, onChange, onLogin, onEnterApp, onSwitchMode }) {
+  // Local state to toggle password visibility
+  const [showPassword, setShowPassword] = useState(false)
+
   return (
     <>
       <label>
@@ -54,14 +58,20 @@ function LoginFields({ form, onChange, onLogin, onEnterApp, onSwitchMode }) {
         />
       </label>
       <label>
-        <div className="label-row">
+        {/* Added a Show/Hide switch button inside the label title layout header */}
+        <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>Password</span>
-          <button type="button" className="linkish">
-            Forgot Password?
+          <button 
+            type="button" 
+            className="linkish" 
+            onClick={() => setShowPassword((prev) => !prev)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            {showPassword ? 'Hide' : 'Show'}
           </button>
         </div>
         <input
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           placeholder="Password"
           value={form.password}
           onChange={(e) => onChange((c) => ({ ...c, password: e.target.value }))}

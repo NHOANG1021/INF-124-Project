@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Avatar } from '../shared/Avatar'
 
 export function SettingsPage({ settings, onUpdateSettings, onLogout }) {
   const [showPassword, setShowPassword] = useState(false)
@@ -91,18 +90,7 @@ export function SettingsPage({ settings, onUpdateSettings, onLogout }) {
         </div>
 
         <aside className="planner-panel planner-side">
-          <div className="panel-heading">
-            <h3>Profile &amp; Safety</h3>
-          </div>
-
-          <div className="avatar-settings-zone">
-            <div className="avatar-large-wrapper">
-              <Avatar />
-            </div>
-            <button className="secondary-btn full-width">Change Avatar</button>
-          </div>
-
-          <hr className="subtle-divider" />
+          {/* Panel-heading and avatar sections have been completely removed */}
 
           <div className="danger-zone-v2">
             <h4>Danger Zone</h4>
