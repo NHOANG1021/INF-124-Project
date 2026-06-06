@@ -13,16 +13,11 @@ const defaultStoreState = {
   xp: 320,
   cart: [],
   inventory: [],
-  taskExtensionCredits: 0,
   equippedItems: {
     Themes: null,
     Powerups: null,
     Frames: null,
   },
-}
-
-function isRepeatableStoreItem(item) {
-  return item?.title === 'Task Extension'
 }
 
 function getStoreCategory(itemType) {
@@ -80,9 +75,6 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
   const [xp, setXp] = useState(defaultStoreState.xp)
   const [cart, setCart] = useState(defaultStoreState.cart)
   const [inventory, setInventory] = useState(defaultStoreState.inventory)
-  const [taskExtensionCredits, setTaskExtensionCredits] = useState(
-    defaultStoreState.taskExtensionCredits,
-  )
   const [storeItems, setStoreItems] = useState([])
   const [storeLoading, setStoreLoading] = useState(true)
   const [storeError, setStoreError] = useState('')
@@ -94,7 +86,6 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
   const hydrateInventoryState = useCallback(async (userId) => {
     if (!userId) {
       setInventory(defaultStoreState.inventory)
-      setTaskExtensionCredits(defaultStoreState.taskExtensionCredits)
       setEquippedItems(defaultStoreState.equippedItems)
       return
     }
@@ -103,16 +94,10 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
       const inventoryRows = await fetchInventoryForUser(userId)
       const inventoryItems = inventoryRows.map(formatInventoryItem)
       setInventory(inventoryItems)
-      setTaskExtensionCredits(
-        inventoryItems
-          .filter((item) => isRepeatableStoreItem(item))
-          .reduce((sum, item) => sum + item.quantity, 0),
-      )
       setEquippedItems(deriveEquippedItems(inventoryItems))
     } catch (error) {
       console.error('Error hydrating user inventory:', error)
       setInventory(defaultStoreState.inventory)
-      setTaskExtensionCredits(defaultStoreState.taskExtensionCredits)
       setEquippedItems(defaultStoreState.equippedItems)
     }
   }, [])
@@ -130,7 +115,11 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
         }
 
         const data = await response.json()
-        setStoreItems(data.map(formatStoreItem))
+        setStoreItems(
+          data
+            .map(formatStoreItem)
+            .filter((item) => item.title !== 'Task Extension'),
+        )
       } catch (err) {
         console.error('Error loading store items:', err)
         setStoreError('Could not load store items.')
@@ -150,7 +139,6 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
       setHydratedAccountId(null)
       setCart(defaultStoreState.cart)
       setInventory(defaultStoreState.inventory)
-      setTaskExtensionCredits(defaultStoreState.taskExtensionCredits)
       setEquippedItems(defaultStoreState.equippedItems)
       setStoreFeedback('')
 
@@ -212,20 +200,8 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
     }
   }, [statsHydrated, hydratedAccountId, currentAccount?.id, coins, xp, onAccountUpdate])
 
-  const ownedItemIds = useMemo(
-    () =>
-      new Set(
-        inventory.filter((item) => !isRepeatableStoreItem(item)).map((item) => item.id),
-      ),
-    [inventory],
-  )
-  const cartItemIds = useMemo(
-    () =>
-      new Set(
-        cart.filter((item) => !isRepeatableStoreItem(item)).map((item) => item.id),
-      ),
-    [cart],
-  )
+  const ownedItemIds = useMemo(() => new Set(inventory.map((item) => item.id)), [inventory])
+  const cartItemIds = useMemo(() => new Set(cart.map((item) => item.id)), [cart])
   const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price, 0), [cart])
 
   const equippedTheme = useMemo(
@@ -245,8 +221,6 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
     () => inventory.find((item) => item.id === equippedItems.Frames) ?? null,
     [inventory, equippedItems.Frames],
   )
-  const availableTaskExtensions = taskExtensionCredits
-
   /** Reward coins and XP atomically (avoids two-render flash). */
   const applyReward = useCallback((coinDelta, xpDelta) => {
     if (coinDelta !== 0) setCoins((c) => Math.max(0, c + coinDelta))
@@ -255,14 +229,12 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
 
   const addToCart = useCallback(
     (item) => {
-      const repeatable = isRepeatableStoreItem(item)
-
-      if (!repeatable && ownedItemIds.has(item.id)) {
+      if (ownedItemIds.has(item.id)) {
         setStoreFeedback(`${item.title} is already in your inventory.`)
         return
       }
 
-      if (!repeatable && cart.some((entry) => entry.id === item.id)) {
+      if (cart.some((entry) => entry.id === item.id)) {
         return
       }
 
@@ -270,16 +242,10 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
         ...current,
         {
           ...item,
-          cartEntryId: repeatable
-            ? `${item.id}-${Math.random().toString(36).slice(2, 8)}`
-            : String(item.id),
+          cartEntryId: String(item.id),
         },
       ])
-      setStoreFeedback(
-        repeatable
-          ? `${item.title} added. You now have ${currentTaskExtensionCount(cart, 1)} extra task slot${currentTaskExtensionCount(cart, 1) === 1 ? '' : 's'} in cart.`
-          : `${item.title} added to cart.`,
-      )
+      setStoreFeedback(`${item.title} added to cart.`)
     },
     [ownedItemIds, cart],
   )
@@ -322,55 +288,16 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
     }
 
     setCoins((c) => c - cartTotal)
-    const purchasedTaskExtensions = cart.filter((item) => isRepeatableStoreItem(item)).length
     setInventory((current) => [
       ...current,
-      ...cart.filter(
-        (item) =>
-          !isRepeatableStoreItem(item) && !current.some((owned) => owned.id === item.id),
-      ),
+      ...cart.filter((item) => !current.some((owned) => owned.id === item.id)),
     ])
-    if (purchasedTaskExtensions > 0) {
-      setTaskExtensionCredits((count) => count + purchasedTaskExtensions)
-    }
-    setStoreFeedback(
-      purchasedTaskExtensions > 0
-        ? `Purchase complete. You now have ${taskExtensionCredits + purchasedTaskExtensions} task extension slot${taskExtensionCredits + purchasedTaskExtensions === 1 ? '' : 's'} available.`
-        : 'Purchase complete. Your items are now in inventory.',
-    )
+    setStoreFeedback('Purchase complete. Your items are now in inventory.')
     setCart([])
     if (currentAccount?.id) {
       await hydrateInventoryState(currentAccount.id)
     }
-  }, [cart, cartTotal, coins, taskExtensionCredits, currentAccount?.id, hydrateInventoryState])
-
-  const consumeTaskExtension = useCallback(() => {
-    let consumed = false
-    let nextCount = null
-
-    setTaskExtensionCredits((count) => {
-      if (count <= 0) return count
-      consumed = true
-      nextCount = count - 1
-      return nextCount
-    })
-
-    if (consumed && currentAccount?.id) {
-      const extensionItem = inventory.find((item) => isRepeatableStoreItem(item))
-      if (extensionItem) {
-        updateInventoryItemForUser(
-          currentAccount.id,
-          extensionItem.id,
-          Math.max(nextCount ?? 0, 0),
-          false,
-        ).catch((error) => {
-          console.error('Error consuming task extension:', error)
-        })
-      }
-    }
-
-    return consumed
-  }, [currentAccount?.id, inventory])
+  }, [cart, cartTotal, coins, currentAccount?.id, hydrateInventoryState])
 
   // Equip an item or unequip by passing null and a category string.
   const equipItem = useCallback(async (itemOrNull, category) => {
@@ -436,7 +363,6 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
     equippedTheme,
     equippedAvatar,
     equippedFrame,
-    availableTaskExtensions,
     storeFeedback,
 
     // actions
@@ -444,10 +370,5 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
     removeFromCart,
     checkoutCart,
     equipItem,
-    consumeTaskExtension,
   }
-}
-
-function currentTaskExtensionCount(cart, increment = 0) {
-  return cart.filter((item) => isRepeatableStoreItem(item)).length + increment
 }

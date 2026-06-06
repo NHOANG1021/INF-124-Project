@@ -6,7 +6,7 @@ function getTaskStorageKey(profileKey) {
   return `gametask:week-plan:${profileKey}`
 }
 
-export function useTasks(applyReward, profileKey, availableTaskExtensions, consumeTaskExtension) {
+export function useTasks(applyReward, profileKey) {
   const todayKey = DAY_KEYS[new Date().getDay()] ?? 'mon'
 
   const [weekPlan, setWeekPlan] = useState(() => buildWeekTemplate())
@@ -103,11 +103,6 @@ export function useTasks(applyReward, profileKey, availableTaskExtensions, consu
   )
 
   const addTaskToDay = useCallback(() => {
-    if (availableTaskExtensions <= 0) {
-      setTaskFeedback('Buy a Task Extension in the store to add one custom task slot to the selected day.')
-      return
-    }
-
     const trimmed = newTaskTitle.trim()
     if (!trimmed) return
 
@@ -125,25 +120,17 @@ export function useTasks(applyReward, profileKey, availableTaskExtensions, consu
         day.key === selectedDay ? { ...day, tasks: [...day.tasks, task] } : day,
       ),
     )
-    consumeTaskExtension()
-    setTaskFeedback(
-      `${task.title} added to ${activeDay.fullLabel}. ${Math.max(
-        availableTaskExtensions - 1,
-        0,
-      )} extra task slot${availableTaskExtensions - 1 === 1 ? '' : 's'} remaining.`,
-    )
+    setTaskFeedback(`${task.title} added to ${activeDay.fullLabel}.`)
 
     setNewTaskTitle('')
     setNewTaskMode('check')
     setNewTaskTarget(1)
   }, [
-    availableTaskExtensions,
     newTaskTitle,
     newTaskMode,
     newTaskTarget,
     selectedDay,
     activeDay.fullLabel,
-    consumeTaskExtension,
   ])
 
   useEffect(() => {
@@ -194,7 +181,6 @@ export function useTasks(applyReward, profileKey, availableTaskExtensions, consu
     setNewTaskMode,
     newTaskTarget,
     setNewTaskTarget,
-    availableTaskExtensions,
     taskFeedback,
     toggleTask,
     incrementTask,

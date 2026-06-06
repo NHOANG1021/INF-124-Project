@@ -55,12 +55,7 @@ function App() {
   // ── Hooks ──────────────────────────────────────────────────────────────────
   const auth = useAuth()
   const store = useStore(auth.profileKey, auth.currentAccount, auth.updateCurrentAccount)
-  const tasks = useTasks(
-    store.applyReward,
-    auth.profileKey,
-    store.availableTaskExtensions,
-    store.consumeTaskExtension,
-  )
+  const tasks = useTasks(store.applyReward, auth.profileKey)
 
   useEffect(() => {
     let isActive = true
@@ -241,7 +236,6 @@ function App() {
                   onNewTaskModeChange={tasks.setNewTaskMode}
                   newTaskTarget={tasks.newTaskTarget}
                   onNewTaskTargetChange={tasks.setNewTaskTarget}
-                  availableTaskExtensions={tasks.availableTaskExtensions}
                   taskFeedback={tasks.taskFeedback}
                   onAddTask={tasks.addTaskToDay}
                 />

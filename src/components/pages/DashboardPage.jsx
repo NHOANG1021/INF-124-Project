@@ -16,12 +16,9 @@ export function DashboardPage({
   onNewTaskModeChange,
   newTaskTarget,
   onNewTaskTargetChange,
-  availableTaskExtensions,
   taskFeedback,
   onAddTask,
 }) {
-  const canAddTasks = availableTaskExtensions > 0
-
   return (
     <section className="dashboard-layout">
       <div className="section-header">
@@ -43,8 +40,8 @@ export function DashboardPage({
           <span>Active planning day</span>
         </article>
         <article className="stat-card">
-          <strong>{availableTaskExtensions}</strong>
-          <span>Custom task slot{availableTaskExtensions === 1 ? '' : 's'} available</span>
+          <strong>{weekPlan.length}</strong>
+          <span>Days planned this week</span>
         </article>
       </div>
 
@@ -127,11 +124,7 @@ export function DashboardPage({
           <div className="panel-heading">
             <div>
               <h3>Add Daily or Task</h3>
-              <p>
-                {canAddTasks
-                  ? 'Spend one Task Extension to add one custom task to the selected day.'
-                  : 'Buy a Task Extension in the store to add one custom task slot.'}
-              </p>
+              <p>Add a custom task to the selected day.</p>
             </div>
           </div>
 

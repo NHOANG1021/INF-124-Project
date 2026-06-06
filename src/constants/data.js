@@ -77,14 +77,6 @@ export const storeItems = [
     art: 'xp',
     description: 'Boost rewards for the next streak of completed tasks.',
   },
-  {
-    id: 8,
-    category: 'Powerups',
-    title: 'Task Extension',
-    price: 750,
-    art: 'calendar',
-    description: 'Use one extension token when you need extra time.',
-  },
   // {
   //   id: 9,
   //   category: 'Powerups',

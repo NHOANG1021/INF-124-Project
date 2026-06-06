@@ -16,8 +16,6 @@ export function StorePage({
   storeLoading,
   storeError,
 }) {
-  const isRepeatableItem = (item) => item.title === 'Task Extension'
-
   return (
     <section>
       <div className="section-header split">
@@ -64,10 +62,7 @@ export function StorePage({
                     <div className="price-tag">🪙 {item.price.toLocaleString()}</div>
                     <button
                       className="primary-btn"
-                      disabled={
-                        !isRepeatableItem(item) &&
-                        (ownedItemIds.has(item.id) || cartItemIds.has(item.id))
-                      }
+                      disabled={ownedItemIds.has(item.id) || cartItemIds.has(item.id)}
                       onClick={() => onAddToCart(item)}
                     >
                       {ownedItemIds.has(item.id)
