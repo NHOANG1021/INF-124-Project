@@ -106,7 +106,16 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
         return
       }
 
-      const latestAccount = (await fetchAccountById(currentAccount.id)) ?? currentAccount
+      setCoins(Number(currentAccount.coins) || 0)
+      setXp(Number(currentAccount.xp) || 0)
+
+      let latestAccount = currentAccount
+
+      try {
+        latestAccount = (await fetchAccountById(currentAccount.id)) ?? currentAccount
+      } catch (error) {
+        console.error('Error hydrating user stats:', error)
+      }
 
       if (!isActive) return
 
@@ -273,7 +282,7 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
   const currentLevel =
     currentAccount?.id != null
       ? Number(currentAccount.level ?? 0)
-      : Math.floor(xp / 100)
+      : Math.floor(xp / 100) + 1
   const xpIntoLevel = xp % 100
   const xpGoal = 100
 

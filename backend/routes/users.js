@@ -245,7 +245,7 @@ router.patch("/:id/stats", async (req, res) => {
 
     const normalizedCoins = Math.max(0, Math.floor(coins));
     const normalizedXp = Math.max(0, Math.floor(xp));
-    const level = Math.floor(normalizedXp / 100);
+    const level = Math.floor(normalizedXp / 100) + 1;
 
     const result = await pool.query(
       `
@@ -444,7 +444,7 @@ router.post("/signup", async (req, res) => {
         passwordHash,
         1500,
         0,
-        0,
+        1,
         0,
       ]
     );
