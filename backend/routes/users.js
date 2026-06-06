@@ -9,7 +9,7 @@ router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT *
-      FROM Users
+      FROM users
     `);
 
     res.json(result.rows);
@@ -43,14 +43,14 @@ router.post("/", async (req, res) => {
 
     await pool.query(
       `
-      INSERT INTO Users
+      INSERT INTO users
       (
-        "FirstName",
-        "LastName",
-        "Email",
-        "Username",
-        "PasswordHash",
-        "Bio"
+        firstname,
+        lastname,
+        email,
+        username,
+        passwordhash,
+        bio
       )
       VALUES ($1, $2, $3, $4, $5, $6)
       `,
@@ -85,8 +85,8 @@ router.delete("/:id", async (req, res) => {
 
     const result = await pool.query(
       `
-      DELETE FROM Users
-      WHERE "UserID" = $1
+      DELETE FROM users
+      WHERE userid = $1
       `,
       [id]
     );
@@ -134,15 +134,15 @@ router.put("/:id", async (req, res) => {
 
       result = await pool.query(
         `
-        UPDATE Users
-        SET "FirstName" = $1,
-            "LastName" = $2,
-            "Email" = $3,
-            "Username" = $4,
-            "PasswordHash" = $5,
-            "Bio" = $6,
-            "Updated_At" = CURRENT_TIMESTAMP
-        WHERE "UserID" = $7
+        UPDATE users
+        SET firstname = $1,
+            lastname = $2,
+            email = $3,
+            username = $4,
+            passwordhash = $5,
+            bio = $6,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE userid = $7
         `,
         [
           FirstName,
@@ -158,14 +158,14 @@ router.put("/:id", async (req, res) => {
     } else {
       result = await pool.query(
         `
-        UPDATE Users
-        SET "FirstName" = $1,
-            "LastName" = $2,
-            "Email" = $3,
-            "Username" = $4,
-            "Bio" = $5,
-            "Updated_At" = CURRENT_TIMESTAMP
-        WHERE "UserID" = $6
+        UPDATE users
+        SET firstname = $1,
+            lastname = $2,
+            email = $3,
+            username = $4,
+            bio = $5,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE userid = $6
         `,
         [
           FirstName,
@@ -190,6 +190,164 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({
       error: "Failed to update User",
       details: err.message
+    });
+  }
+});
+
+// LOGIN user
+router.post("/login", async (req, res) => {
+  try {
+    const { identifier, password } = req.body;
+
+    const user = await pool.query(
+      `
+      SELECT *
+      FROM users
+      WHERE LOWER(username) = LOWER($1)
+         OR LOWER(email) = LOWER($1)
+      `,
+      [identifier]
+    );
+
+    if (user.rows.length === 0) {
+      return res.status(401).json({
+        error: "Invalid username/email or password"
+      });
+    }
+
+    const dbUser = user.rows[0];
+
+    const validPassword = await bcrypt.compare(
+      password,
+      dbUser.passwordhash
+    );
+
+    if (!validPassword) {
+      return res.status(401).json({
+        error: "Invalid username/email or password"
+      });
+    }
+
+    return res.status(200).json({
+      message: "Login successful",
+      user: {
+        id: dbUser.userid,
+        username: dbUser.username,
+        email: dbUser.email,
+        firstName: dbUser.firstname,
+        lastName: dbUser.lastname
+      }
+    });
+
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+// CHECK if user exists
+router.post("/check-user", async (req, res) => {
+  try {
+    const { username, email } = req.body;
+
+    const result = await pool.query(
+      `
+      SELECT username, email
+      FROM users
+      WHERE LOWER(username) = LOWER($1)
+         OR LOWER(email) = LOWER($2)
+      `,
+      [username, email]
+    );
+
+    if (result.rows.length > 0) {
+      return res.status(409).json({
+        exists: true,
+        message: "Username or email already exists",
+      });
+    }
+
+    return res.status(200).json({
+      exists: false,
+      message: "Username and email are available",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+});
+
+router.post("/signup", async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      username,
+      email,
+      password,
+    } = req.body;
+
+    const existingUser = await pool.query(
+      `
+      SELECT 1
+      FROM users
+      WHERE LOWER(username) = LOWER($1)
+         OR LOWER(email) = LOWER($2)
+      `,
+      [username, email]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({
+        error: "Username or email already exists",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const result = await pool.query(
+      `
+      INSERT INTO users
+      (
+        firstname,
+        lastname,
+        username,
+        email,
+        passwordhash
+      )
+      VALUES
+      (
+        $1, $2, $3, $4, $5
+      )
+      RETURNING
+        userid AS id,
+        firstname AS "firstName",
+        lastname AS "lastName",
+        username,
+        email
+      `,
+      [
+        firstName,
+        lastName,
+        username,
+        email,
+        passwordHash,
+      ]
+    );
+
+    return res.status(201).json({
+      message: "Account created successfully",
+      user: result.rows[0],
+    });
+  }
+  catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Internal server error",
     });
   }
 });

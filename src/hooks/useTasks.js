@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DAY_KEYS } from '../constants/data'
 import { buildWeekTemplate, createTask } from '../utils/task'
-import { loadStoredTaskState, saveStoredTaskState } from '../utils/storage'
 
 export function useTasks(applyReward, profileKey, availableTaskExtensions, consumeTaskExtension) {
   const todayKey = DAY_KEYS[new Date().getDay()] ?? 'mon'
-  const initialTaskState = loadStoredTaskState(profileKey, {
-    weekPlan: buildWeekTemplate(),
-    selectedDay: todayKey,
-  })
 
-  const [weekPlan, setWeekPlan] = useState(initialTaskState.weekPlan)
-  const [selectedDay, setSelectedDay] = useState(initialTaskState.selectedDay)
+  const [weekPlan, setWeekPlan] = useState(() => buildWeekTemplate())
+  const [selectedDay, setSelectedDay] = useState(todayKey)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskMode, setNewTaskMode] = useState('check')
   const [newTaskTarget, setNewTaskTarget] = useState(1)
@@ -148,24 +143,13 @@ export function useTasks(applyReward, profileKey, availableTaskExtensions, consu
   ])
 
   useEffect(() => {
-    const nextState = loadStoredTaskState(profileKey, {
-      weekPlan: buildWeekTemplate(),
-      selectedDay: todayKey,
-    })
-    setWeekPlan(nextState.weekPlan)
-    setSelectedDay(nextState.selectedDay)
+    setWeekPlan(buildWeekTemplate())
+    setSelectedDay(todayKey)
     setTaskFeedback('')
     setNewTaskTitle('')
     setNewTaskMode('check')
     setNewTaskTarget(1)
   }, [profileKey, todayKey])
-
-  useEffect(() => {
-    saveStoredTaskState(profileKey, {
-      weekPlan,
-      selectedDay,
-    })
-  }, [profileKey, weekPlan, selectedDay])
 
   return {
     todayKey,

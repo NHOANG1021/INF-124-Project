@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { loadStoredStoreState, saveStoredStoreState } from '../utils/storage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 const defaultStoreState = {
@@ -48,18 +47,17 @@ function formatStoreItem(item) {
 }
 
 export function useStore(profileKey) {
-  const initialState = loadStoredStoreState(profileKey, defaultStoreState)
-  const [coins, setCoins] = useState(initialState.coins)
-  const [xp, setXp] = useState(initialState.xp)
-  const [cart, setCart] = useState(initialState.cart)
-  const [inventory, setInventory] = useState(initialState.inventory)
+  const [coins, setCoins] = useState(defaultStoreState.coins)
+  const [xp, setXp] = useState(defaultStoreState.xp)
+  const [cart, setCart] = useState(defaultStoreState.cart)
+  const [inventory, setInventory] = useState(defaultStoreState.inventory)
   const [taskExtensionCredits, setTaskExtensionCredits] = useState(
-    initialState.taskExtensionCredits ?? 0,
+    defaultStoreState.taskExtensionCredits,
   )
   const [storeItems, setStoreItems] = useState([])
   const [storeLoading, setStoreLoading] = useState(true)
   const [storeError, setStoreError] = useState('')
-  const [equippedItems, setEquippedItems] = useState(initialState.equippedItems)
+  const [equippedItems, setEquippedItems] = useState(defaultStoreState.equippedItems)
   const [storeFeedback, setStoreFeedback] = useState('')
 
   useEffect(() => {
@@ -88,26 +86,14 @@ export function useStore(profileKey) {
   }, [])
 
   useEffect(() => {
-    const nextState = loadStoredStoreState(profileKey, defaultStoreState)
-    setCoins(nextState.coins)
-    setXp(nextState.xp)
-    setCart(nextState.cart)
-    setInventory(nextState.inventory)
-    setTaskExtensionCredits(nextState.taskExtensionCredits ?? 0)
-    setEquippedItems(nextState.equippedItems)
+    setCoins(defaultStoreState.coins)
+    setXp(defaultStoreState.xp)
+    setCart(defaultStoreState.cart)
+    setInventory(defaultStoreState.inventory)
+    setTaskExtensionCredits(defaultStoreState.taskExtensionCredits)
+    setEquippedItems(defaultStoreState.equippedItems)
     setStoreFeedback('')
   }, [profileKey])
-
-  useEffect(() => {
-    saveStoredStoreState(profileKey, {
-      coins,
-      xp,
-      cart,
-      inventory,
-      taskExtensionCredits,
-      equippedItems,
-    })
-  }, [profileKey, coins, xp, cart, inventory, taskExtensionCredits, equippedItems])
 
   const ownedItemIds = useMemo(
     () =>
