@@ -5,19 +5,24 @@ const USERS_PER_PAGE = 10
 export function LeaderboardPage({
   currentShown,
   onTabChange,
+  globalUsers,
   friends,
   currleadpage,
   nextleadpage,
 }) {
   // Sort a copy so the original array is never mutated
-  const sortedFriends = useMemo(
-    () => [...friends].sort((a, b) => b.level - a.level),
-    [friends],
+  const sortedUsers = useMemo(
+    () =>
+      [...(currentShown === 'Global' ? globalUsers : friends)].sort((a, b) => {
+        if (b.level !== a.level) return b.level - a.level
+        return (b.exp ?? 0) - (a.exp ?? 0)
+      }),
+    [currentShown, globalUsers, friends],
   )
 
   const startIndex = (currleadpage - 1) * USERS_PER_PAGE
   const endIndex = startIndex + USERS_PER_PAGE
-  const visibleUsers = sortedFriends.slice(startIndex, endIndex)
+  const visibleUsers = sortedUsers.slice(startIndex, endIndex)
 
   return (
     <section className="LeaderboardPage">
@@ -55,6 +60,15 @@ export function LeaderboardPage({
         </article>
       ))}
 
+      {visibleUsers.length === 0 && (
+        <article className="grid-entry">
+          <div>-</div>
+          <div>{currentShown === 'Global' ? 'No users found.' : 'No friends yet.'}</div>
+          <div>-</div>
+          <div>-</div>
+        </article>
+      )}
+
       <div className="button-row">
         <button
           onClick={() => nextleadpage(currleadpage - 1)}
@@ -65,7 +79,7 @@ export function LeaderboardPage({
         </button>
         <button
           onClick={() => nextleadpage(currleadpage + 1)}
-          disabled={endIndex >= sortedFriends.length}
+          disabled={endIndex >= sortedUsers.length}
           className="lead-button"
         >
           Next

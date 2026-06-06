@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 // Data
 import { friendList, requests} from './constants/data'
@@ -8,6 +8,11 @@ import { useAuth } from './hooks/useAuth'
 import { useNotifications } from './hooks/useNotifications'
 import { useStore } from './hooks/useStore'
 import { useTasks } from './hooks/useTasks'
+import {
+  fetchGlobalLeaderboard,
+  fetchFriendsForUser,
+  fetchReceivedFriendRequestsForUser,
+} from './utils/storage'
 
 // Layout
 import { HeaderBadge } from './components/layout/HeaderBadge'
@@ -43,6 +48,9 @@ function App() {
   const [storeFilter, setStoreFilter] = useState('All')
   const [globalTab, setGlobalTab] = useState('Global')
   const [leaderPage, setLeaderPage] = useState(1)
+  const [backendFriends, setBackendFriends] = useState([])
+  const [backendRequests, setBackendRequests] = useState([])
+  const [globalLeaderboard, setGlobalLeaderboard] = useState([])
 
   // ── Hooks ──────────────────────────────────────────────────────────────────
   const auth = useAuth()
@@ -54,13 +62,99 @@ function App() {
     store.consumeTaskExtension,
   )
 
+  useEffect(() => {
+    let isActive = true
+
+    async function hydrateSocial() {
+      if (!auth.currentAccount?.id) {
+        if (!isActive) return
+        setBackendFriends([])
+        setBackendRequests([])
+        return
+      }
+
+      try {
+        const [friendsData, requestsData] = await Promise.all([
+          fetchFriendsForUser(auth.currentAccount.id),
+          fetchReceivedFriendRequestsForUser(auth.currentAccount.id),
+        ])
+
+        if (!isActive) return
+
+        setBackendFriends(
+          friendsData.map((friend) => ({
+            name:
+              friend.Username ||
+              [friend.FirstName, friend.LastName].filter(Boolean).join(' ') ||
+              'Unknown User',
+            level: Number(friend.Level) || 1,
+            favorite: Boolean(friend.isfavorite ?? friend.isFavorite),
+            exp: Number(friend.XP ?? friend.xp) || 0,
+          })),
+        )
+
+        setBackendRequests(
+          requestsData.map((request) => ({
+            name:
+              request.Username ||
+              [request.FirstName, request.LastName].filter(Boolean).join(' ') ||
+              'Unknown User',
+            level: Number(request.Level) || 1,
+          })),
+        )
+      } catch (error) {
+        console.error('Error loading friends data:', error)
+        if (!isActive) return
+        setBackendFriends([])
+        setBackendRequests([])
+      }
+    }
+
+    hydrateSocial()
+
+    return () => {
+      isActive = false
+    }
+  }, [auth.currentAccount?.id])
+
+  useEffect(() => {
+    let isActive = true
+
+    async function hydrateLeaderboard() {
+      try {
+        const leaderboardData = await fetchGlobalLeaderboard()
+        if (!isActive) return
+
+        setGlobalLeaderboard(
+          leaderboardData.map((entry) => ({
+            name: entry.username,
+            level: Number(entry.level) || 1,
+            exp: Number(entry.xp) || 0,
+          })),
+        )
+      } catch (error) {
+        console.error('Error loading leaderboard:', error)
+        if (!isActive) return
+        setGlobalLeaderboard([])
+      }
+    }
+
+    hydrateLeaderboard()
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
   // ── Derived / filtered lists (memoised) ────────────────────────────────────
   const filteredFriends = useMemo(
     () =>
       friendFilter === 'Favorites'
-        ? friendList.filter((f) => f.favorite)
-        : friendList,
-    [friendFilter],
+        ? (auth.currentAccount?.id ? backendFriends : friendList).filter((f) => f.favorite)
+        : auth.currentAccount?.id
+          ? backendFriends
+          : friendList,
+    [auth.currentAccount?.id, backendFriends, friendFilter],
   )
 
   const filteredStore = useMemo(
@@ -160,7 +254,7 @@ function App() {
                   friendFilter={friendFilter}
                   onFilterChange={setFriendFilter}
                   friends={filteredFriends}
-                  requests={requests}
+                  requests={auth.currentAccount?.id ? backendRequests : requests}
                 />
               )}
 
@@ -212,6 +306,7 @@ function App() {
                 <LeaderboardPage
                   currentShown={globalTab}
                   onTabChange={setGlobalTab}
+                  globalUsers={globalLeaderboard}
                   friends={filteredFriends}
                   currleadpage={leaderPage}
                   nextleadpage={setLeaderPage}

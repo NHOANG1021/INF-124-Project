@@ -145,7 +145,6 @@ export function DashboardPage({
                 value={newTaskTitle}
                 onChange={(e) => onNewTaskTitleChange(e.target.value)}
                 placeholder="e.g. Finish lab report"
-                disabled={!canAddTasks}
               />
             </label>
 
@@ -154,7 +153,6 @@ export function DashboardPage({
               <select
                 value={newTaskMode}
                 onChange={(e) => onNewTaskModeChange(e.target.value)}
-                disabled={!canAddTasks}
               >
                 <option value="check">Checkbox</option>
                 <option value="count">Count Goal</option>
@@ -169,7 +167,6 @@ export function DashboardPage({
                   min="1"
                   value={newTaskTarget}
                   onChange={(e) => onNewTaskTargetChange(Number(e.target.value))}
-                  disabled={!canAddTasks}
                 />
               </label>
             )}
@@ -178,7 +175,7 @@ export function DashboardPage({
               type="button"
               className="primary-btn full-width"
               onClick={onAddTask}
-              disabled={!canAddTasks}
+              disabled={!newTaskTitle.trim()}
             >
               Add To {activeDay.fullLabel}
             </button>

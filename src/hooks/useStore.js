@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchAccountById, syncAccountStats } from '../utils/storage'
+import {
+  addInventoryItemForUser,
+  fetchAccountById,
+  fetchInventoryForUser,
+  syncAccountStats,
+  updateInventoryItemForUser,
+} from '../utils/storage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 const defaultStoreState = {
@@ -47,6 +53,28 @@ function formatStoreItem(item) {
   }
 }
 
+function formatInventoryItem(item) {
+  return {
+    ...formatStoreItem(item),
+    quantity: Number(item.Quantity) || 1,
+    isEquipped: Boolean(item.isEquipped ?? item.IsEquipped),
+  }
+}
+
+function deriveEquippedItems(items) {
+  return items.reduce(
+    (equipped, item) => {
+      if (!item.isEquipped) return equipped
+      return { ...equipped, [item.category]: item.id }
+    },
+    {
+      Themes: null,
+      Powerups: null,
+      Frames: null,
+    },
+  )
+}
+
 export function useStore(profileKey, currentAccount, onAccountUpdate) {
   const [coins, setCoins] = useState(defaultStoreState.coins)
   const [xp, setXp] = useState(defaultStoreState.xp)
@@ -62,6 +90,32 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
   const [storeFeedback, setStoreFeedback] = useState('')
   const [statsHydrated, setStatsHydrated] = useState(false)
   const [hydratedAccountId, setHydratedAccountId] = useState(null)
+
+  const hydrateInventoryState = useCallback(async (userId) => {
+    if (!userId) {
+      setInventory(defaultStoreState.inventory)
+      setTaskExtensionCredits(defaultStoreState.taskExtensionCredits)
+      setEquippedItems(defaultStoreState.equippedItems)
+      return
+    }
+
+    try {
+      const inventoryRows = await fetchInventoryForUser(userId)
+      const inventoryItems = inventoryRows.map(formatInventoryItem)
+      setInventory(inventoryItems)
+      setTaskExtensionCredits(
+        inventoryItems
+          .filter((item) => isRepeatableStoreItem(item))
+          .reduce((sum, item) => sum + item.quantity, 0),
+      )
+      setEquippedItems(deriveEquippedItems(inventoryItems))
+    } catch (error) {
+      console.error('Error hydrating user inventory:', error)
+      setInventory(defaultStoreState.inventory)
+      setTaskExtensionCredits(defaultStoreState.taskExtensionCredits)
+      setEquippedItems(defaultStoreState.equippedItems)
+    }
+  }, [])
 
   useEffect(() => {
     async function fetchStoreItems() {
@@ -124,6 +178,7 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
 
       setCoins(Number(latestAccount.coins) || 0)
       setXp(Number(latestAccount.xp) || 0)
+      await hydrateInventoryState(latestAccount.id ?? currentAccount.id)
       onAccountUpdate?.(latestAccount)
       setHydratedAccountId(latestAccount.id ?? currentAccount.id)
       setStatsHydrated(true)
@@ -134,7 +189,7 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
     return () => {
       isActive = false
     }
-  }, [profileKey, currentAccount, onAccountUpdate])
+  }, [profileKey, currentAccount?.id, onAccountUpdate, hydrateInventoryState])
 
   useEffect(() => {
     if (!statsHydrated || !currentAccount?.id) return
@@ -233,7 +288,7 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
     setCart((current) => current.filter((item) => item.cartEntryId !== cartEntryId))
   }, [])
 
-  const checkoutCart = useCallback(() => {
+  const checkoutCart = useCallback(async () => {
     if (cart.length === 0) {
       setStoreFeedback('Add items to your cart before checking out.')
       return
@@ -242,6 +297,30 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
       setStoreFeedback('Not enough coins for this purchase.')
       return
     }
+
+    if (currentAccount?.id) {
+      const groupedCart = cart.reduce((groups, item) => {
+        const entry = groups.get(item.id) ?? { item, quantity: 0 }
+        entry.quantity += 1
+        groups.set(item.id, entry)
+        return groups
+      }, new Map())
+
+      for (const { item, quantity } of groupedCart.values()) {
+        const result = await addInventoryItemForUser(
+          currentAccount.id,
+          item.id,
+          quantity,
+          false,
+        )
+
+        if (!result.ok) {
+          setStoreFeedback(result.data?.error || 'Could not complete purchase.')
+          return
+        }
+      }
+    }
+
     setCoins((c) => c - cartTotal)
     const purchasedTaskExtensions = cart.filter((item) => isRepeatableStoreItem(item)).length
     setInventory((current) => [
@@ -260,29 +339,73 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
         : 'Purchase complete. Your items are now in inventory.',
     )
     setCart([])
-  }, [cart, cartTotal, coins, taskExtensionCredits])
+    if (currentAccount?.id) {
+      await hydrateInventoryState(currentAccount.id)
+    }
+  }, [cart, cartTotal, coins, taskExtensionCredits, currentAccount?.id, hydrateInventoryState])
 
   const consumeTaskExtension = useCallback(() => {
     let consumed = false
+    let nextCount = null
 
     setTaskExtensionCredits((count) => {
       if (count <= 0) return count
       consumed = true
-      return count - 1
+      nextCount = count - 1
+      return nextCount
     })
 
+    if (consumed && currentAccount?.id) {
+      const extensionItem = inventory.find((item) => isRepeatableStoreItem(item))
+      if (extensionItem) {
+        updateInventoryItemForUser(
+          currentAccount.id,
+          extensionItem.id,
+          Math.max(nextCount ?? 0, 0),
+          false,
+        ).catch((error) => {
+          console.error('Error consuming task extension:', error)
+        })
+      }
+    }
+
     return consumed
-  }, [])
+  }, [currentAccount?.id, inventory])
 
   // Equip an item or unequip by passing null and a category string.
-  const equipItem = useCallback((itemOrNull, category) => {
+  const equipItem = useCallback(async (itemOrNull, category) => {
     if (itemOrNull == null) {
       // unequip the specified category
       setEquippedItems((current) => ({ ...current, [category]: null }))
+      if (currentAccount?.id) {
+        const existingItem = inventory.find((item) => item.category === category && item.isEquipped)
+        if (existingItem) {
+          await updateInventoryItemForUser(
+            currentAccount.id,
+            existingItem.id,
+            existingItem.quantity ?? 1,
+            false,
+          )
+        }
+      }
       return
     }
     setEquippedItems((current) => ({ ...current, [itemOrNull.category]: itemOrNull.id }))
-  }, [])
+
+    if (currentAccount?.id) {
+      const sameCategoryItems = inventory.filter((item) => item.category === itemOrNull.category)
+      for (const item of sameCategoryItems) {
+        const shouldEquip = item.id === itemOrNull.id
+        await updateInventoryItemForUser(
+          currentAccount.id,
+          item.id,
+          item.quantity ?? 1,
+          shouldEquip,
+        )
+      }
+      await hydrateInventoryState(currentAccount.id)
+    }
+  }, [currentAccount?.id, hydrateInventoryState, inventory])
 
   const currentLevel =
     currentAccount?.id != null

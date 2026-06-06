@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DAY_KEYS } from '../constants/data'
 import { buildWeekTemplate, createTask } from '../utils/task'
 
+function getTaskStorageKey(profileKey) {
+  return `gametask:week-plan:${profileKey}`
+}
+
 export function useTasks(applyReward, profileKey, availableTaskExtensions, consumeTaskExtension) {
   const todayKey = DAY_KEYS[new Date().getDay()] ?? 'mon'
 
@@ -143,13 +147,39 @@ export function useTasks(applyReward, profileKey, availableTaskExtensions, consu
   ])
 
   useEffect(() => {
-    setWeekPlan(buildWeekTemplate())
+    if (typeof window === 'undefined') return
+
+    try {
+      const savedWeekPlan = window.localStorage.getItem(getTaskStorageKey(profileKey))
+      if (savedWeekPlan) {
+        setWeekPlan(JSON.parse(savedWeekPlan))
+      } else {
+        setWeekPlan(buildWeekTemplate())
+      }
+    } catch (error) {
+      console.error('Error loading saved tasks:', error)
+      setWeekPlan(buildWeekTemplate())
+    }
+
     setSelectedDay(todayKey)
     setTaskFeedback('')
     setNewTaskTitle('')
     setNewTaskMode('check')
     setNewTaskTarget(1)
   }, [profileKey, todayKey])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    try {
+      window.localStorage.setItem(
+        getTaskStorageKey(profileKey),
+        JSON.stringify(weekPlan),
+      )
+    } catch (error) {
+      console.error('Error saving tasks:', error)
+    }
+  }, [profileKey, weekPlan])
 
   return {
     todayKey,

@@ -48,34 +48,54 @@ export function FriendsPage({
           </div>
 
           <div className="friend-grid">
-            {friends.map((friend) => (
-              <article key={friend.name} className="friend-card">
-                <Avatar />
+            {friends.length === 0 ? (
+              <article className="friend-card">
                 <div>
-                  <h4>{friend.name}</h4>
-                  <p>Level {friend.level}</p>
+                  <h4>No friends yet</h4>
+                  <p>Send or accept a friend request to build your list.</p>
                 </div>
               </article>
-            ))}
+            ) : (
+              friends.map((friend) => (
+                <article key={friend.name} className="friend-card">
+                  <Avatar />
+                  <div>
+                    <h4>{friend.name}</h4>
+                    <p>Level {friend.level}</p>
+                  </div>
+                </article>
+              ))
+            )}
           </div>
         </>
       ) : (
         <div className="request-stack">
-          {requests.map((request) => (
-            <article key={request.name} className="request-card">
+          {requests.length === 0 ? (
+            <article className="request-card">
               <div className="request-left">
-                <Avatar />
                 <div>
-                  <h4>{request.name}</h4>
-                  <p>Level {request.level}</p>
+                  <h4>No requests right now</h4>
+                  <p>Incoming friend requests will show up here.</p>
                 </div>
               </div>
-              <div className="request-actions">
-                <button className="accept-btn">Accept</button>
-                <button className="decline-btn">Decline</button>
-              </div>
             </article>
-          ))}
+          ) : (
+            requests.map((request) => (
+              <article key={request.name} className="request-card">
+                <div className="request-left">
+                  <Avatar />
+                  <div>
+                    <h4>{request.name}</h4>
+                    <p>Level {request.level}</p>
+                  </div>
+                </div>
+                <div className="request-actions">
+                  <button className="accept-btn">Accept</button>
+                  <button className="decline-btn">Decline</button>
+                </div>
+              </article>
+            ))
+          )}
         </div>
       )}
     </section>

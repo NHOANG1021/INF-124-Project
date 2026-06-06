@@ -66,3 +66,71 @@ export async function signupAccount(account) {
     data,
   }
 }
+
+export async function fetchInventoryForUser(id) {
+  const response = await fetch(`${API_BASE_URL}/api/inventory/user/${id}`)
+  const data = await response.json()
+  return response.ok ? data : []
+}
+
+export async function addInventoryItemForUser(userId, itemId, quantity = 1, isEquipped = false) {
+  const response = await fetch(`${API_BASE_URL}/api/inventory`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      UserID: userId,
+      ItemID: itemId,
+      Quantity: quantity,
+      isEquipped,
+    }),
+  })
+
+  const data = await response.json()
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    data,
+  }
+}
+
+export async function updateInventoryItemForUser(userId, itemId, quantity, isEquipped) {
+  const response = await fetch(`${API_BASE_URL}/api/inventory/${userId}/${itemId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      Quantity: quantity,
+      isEquipped,
+    }),
+  })
+
+  const data = await response.json()
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    data,
+  }
+}
+
+export async function fetchFriendsForUser(id) {
+  const response = await fetch(`${API_BASE_URL}/api/friends/user/${id}`)
+  const data = await response.json()
+  return response.ok ? data : []
+}
+
+export async function fetchReceivedFriendRequestsForUser(id) {
+  const response = await fetch(`${API_BASE_URL}/api/friendRequests/received/${id}`)
+  const data = await response.json()
+  return response.ok ? data : []
+}
+
+export async function fetchGlobalLeaderboard() {
+  const response = await fetch(`${API_BASE_URL}/api/leaderboard`)
+  const data = await response.json()
+  return response.ok ? data : []
+}
