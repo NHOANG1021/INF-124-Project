@@ -130,6 +130,10 @@ export function useAuth() {
     setAuthFeedback('')
   }, [])
 
+  const updateCurrentAccount = useCallback((account) => {
+    setCurrentAccount(account)
+  }, [])
+
   const profileKey =
     sessionType === 'member'
       ? `member:${currentAccount?.id ?? userSettings.username.toLowerCase()}`
@@ -147,10 +151,12 @@ export function useAuth() {
     setLoginForm,
     signupForm,
     setSignupForm,
+    currentAccount,
     enterApp,
     logout,
     handleLogin,
     handleSignup,
     switchAuthMode,
+    updateCurrentAccount,
   }
 }

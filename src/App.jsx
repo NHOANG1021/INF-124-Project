@@ -46,7 +46,7 @@ function App() {
 
   // ── Hooks ──────────────────────────────────────────────────────────────────
   const auth = useAuth()
-  const store = useStore(auth.profileKey)
+  const store = useStore(auth.profileKey, auth.currentAccount, auth.updateCurrentAccount)
   const tasks = useTasks(
     store.applyReward,
     auth.profileKey,

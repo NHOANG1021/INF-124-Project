@@ -25,6 +25,30 @@ export async function loginAccount(identifier, password) {
   return response.ok ? data.user : null
 }
 
+export async function fetchAccountById(id) {
+  const response = await fetch(`${API_BASE_URL}/api/users/${id}`)
+  const data = await response.json()
+  return response.ok ? data : null
+}
+
+export async function syncAccountStats(id, coins, xp) {
+  const response = await fetch(`${API_BASE_URL}/api/users/${id}/stats`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ coins, xp }),
+  })
+
+  const data = await response.json()
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    data,
+  }
+}
+
 export async function signupAccount(account) {
   const response = await fetch(`${API_BASE_URL}/api/users/signup`, {
     method: 'POST',

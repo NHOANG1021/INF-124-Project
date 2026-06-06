@@ -21,6 +21,43 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET single user profile
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `
+      SELECT
+        userid AS id,
+        firstname AS "firstName",
+        lastname AS "lastName",
+        email,
+        username,
+        level,
+        xp,
+        streakcount AS "streakCount",
+        coins,
+        bio
+      FROM users
+      WHERE userid = $1
+      `,
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to get user",
+      error: err.message,
+    });
+  }
+});
+
 // INSERT New User profile
 router.post("/", async (req, res) => {
   try {
@@ -194,6 +231,62 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// UPDATE user stats
+router.patch("/:id/stats", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { coins, xp } = req.body;
+
+    if (typeof coins !== "number" || typeof xp !== "number") {
+      return res.status(400).json({
+        error: "coins and xp must both be numbers",
+      });
+    }
+
+    const normalizedCoins = Math.max(0, Math.floor(coins));
+    const normalizedXp = Math.max(0, Math.floor(xp));
+    const level = Math.floor(normalizedXp / 100);
+
+    const result = await pool.query(
+      `
+      UPDATE users
+      SET coins = $1,
+          xp = $2,
+          level = $3,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE userid = $4
+      RETURNING
+        userid AS id,
+        firstname AS "firstName",
+        lastname AS "lastName",
+        email,
+        username,
+        level,
+        xp,
+        streakcount AS "streakCount",
+        coins,
+        bio
+      `,
+      [normalizedCoins, normalizedXp, level, id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.json({
+      message: "User stats updated successfully",
+      user: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Error updating user stats:", err);
+    return res.status(500).json({
+      error: "Failed to update user stats",
+      details: err.message,
+    });
+  }
+});
+
 // LOGIN user
 router.post("/login", async (req, res) => {
   try {
@@ -235,7 +328,12 @@ router.post("/login", async (req, res) => {
         username: dbUser.username,
         email: dbUser.email,
         firstName: dbUser.firstname,
-        lastName: dbUser.lastname
+        lastName: dbUser.lastname,
+        level: dbUser.level,
+        xp: dbUser.xp,
+        coins: dbUser.coins,
+        streakCount: dbUser.streakcount,
+        bio: dbUser.bio,
       }
     });
 
@@ -316,18 +414,27 @@ router.post("/signup", async (req, res) => {
         lastname,
         username,
         email,
-        passwordhash
+        passwordhash,
+        coins,
+        xp,
+        level,
+        streakcount
       )
       VALUES
       (
-        $1, $2, $3, $4, $5
+        $1, $2, $3, $4, $5, $6, $7, $8, $9
       )
       RETURNING
         userid AS id,
         firstname AS "firstName",
         lastname AS "lastName",
         username,
-        email
+        email,
+        level,
+        xp,
+        coins,
+        streakcount AS "streakCount",
+        bio
       `,
       [
         firstName,
@@ -335,6 +442,10 @@ router.post("/signup", async (req, res) => {
         username,
         email,
         passwordHash,
+        1500,
+        0,
+        0,
+        0,
       ]
     );
 
