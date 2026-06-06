@@ -85,14 +85,14 @@ export const storeItems = [
     art: 'calendar',
     description: 'Use one extension token when you need extra time.',
   },
-  {
-    id: 9,
-    category: 'Powerups',
-    title: 'Custom Avatar',
-    price: 1200,
-    art: 'avatar',
-    description: 'Unlock a personalized profile look and badge frame.',
-  },
+  // {
+  //   id: 9,
+  //   category: 'Powerups',
+  //   title: 'Custom Avatar',
+  //   price: 1200,
+  //   art: 'avatar',
+  //   description: 'Unlock a personalized profile look and badge frame.',
+  // },
   {
     id: 10,
     category: 'Frames',
