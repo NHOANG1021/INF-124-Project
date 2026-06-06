@@ -1,6 +1,12 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { defaultAccount } from '../constants/data'
-import { loginAccount, signupAccount, validateAccount } from '../utils/storage'
+import {
+  clearSession,
+  loadStoredAccounts,
+  loadStoredSession,
+  saveAccounts,
+  saveSession,
+} from '../utils/storage'
 
 const defaultUserSettings = {
   ...defaultAccount,
@@ -10,8 +16,27 @@ const defaultUserSettings = {
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function useAuth() {
-  const [hasEntered, setHasEntered] = useState(false)
-  const [sessionType, setSessionType] = useState('guest')
+  const initialAccounts = loadStoredAccounts()
+  const initialSession = loadStoredSession()
+  const restoredAccount =
+    initialSession?.type === 'member'
+      ? initialAccounts.find(
+          (account) => account.username?.toLowerCase() === initialSession.username?.toLowerCase(),
+        ) ?? null
+      : null
+
+  const [accounts, setAccounts] = useState(initialAccounts)
+  const [hasEntered, setHasEntered] = useState(Boolean(initialSession))
+  const [sessionType, setSessionType] = useState(initialSession?.type || 'guest')
+  const [userSettings, setUserSettings] = useState(
+    restoredAccount
+      ? {
+          ...defaultUserSettings,
+          ...restoredAccount,
+          darkMode: true,
+        }
+      : defaultUserSettings,
+  )
   const [authMode, setAuthMode] = useState('login')
   const [authFeedback, setAuthFeedback] = useState('')
   const [loginForm, setLoginForm] = useState({ identifier: '', password: '' })
@@ -23,23 +48,42 @@ export function useAuth() {
     password: '',
     confirmPassword: '',
   })
-  const [userSettings, setUserSettings] = useState(defaultUserSettings)
   const [currentAccount, setCurrentAccount] = useState(null)
+
+  // Persist accounts whenever they change
+  useEffect(() => {
+    saveAccounts(accounts)
+  }, [accounts])
+
+  useEffect(() => {
+    if (!hasEntered) {
+      clearSession()
+      return
+    }
+
+    if (sessionType === 'member') {
+      saveSession({
+        type: 'member',
+        username: userSettings.username,
+      })
+      return
+    }
+
+    saveSession({ type: 'guest' })
+  }, [hasEntered, sessionType, userSettings.username])
 
   const enterApp = useCallback((type, account = null) => {
     setSessionType(type)
     setHasEntered(true)
     setAuthFeedback('')
-    setCurrentAccount(account)
-
     if (account) {
       setUserSettings((current) => ({
         ...current,
-        firstName: account.firstName || account.FirstName || current.firstName,
-        lastName: account.lastName || account.LastName || current.lastName,
-        username: account.username || account.Username || current.username,
-        email: account.email || account.Email || current.email,
-        password: '',
+        firstName: account.firstName || current.firstName,
+        lastName: account.lastName || current.lastName,
+        username: account.username,
+        email: account.email,
+        password: account.password,
       }))
     }
   }, [])
@@ -47,21 +91,15 @@ export function useAuth() {
   const logout = useCallback(() => {
     setHasEntered(false)
     setSessionType('guest')
-    setCurrentAccount(null)
     setLoginForm({ identifier: '', password: '' })
     setAuthFeedback('')
   }, [])
 
-  const handleLogin = useCallback(async () => {
+  const handleLogin = useCallback(() => {
     const identifier = loginForm.identifier.trim().toLowerCase()
     const { password } = loginForm
 
-    if (!identifier || !password) {
-      setAuthFeedback('Enter your username/email and password.')
-      return
-    }
-
-    const account = await loginAccount(identifier, password)
+    const account = loginAccount(identifier, password)
 
     if (!account) {
       setAuthFeedback('Login failed. Enter a valid username/email and password.')
@@ -69,7 +107,7 @@ export function useAuth() {
     }
 
     enterApp('member', account)
-  }, [loginForm, enterApp])
+  }, [accounts, loginForm, enterApp])
 
   const handleSignup = useCallback(async () => {
     const firstName = signupForm.firstName.trim()
@@ -100,45 +138,42 @@ export function useAuth() {
       return
     }
 
-    const result = await signupAccount({
+   const result = await signupAccount({
       firstName,
       lastName,
       username,
       email,
       password,
-    })
+    });
 
     if (!result.ok) {
-      setAuthFeedback(result.data.error || 'Account creation failed.')
-      return
+      setAuthFeedback(result.data.error);
+      return;
     }
 
     setSignupForm({
-      firstName: '',
-      lastName: '',
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-    })
+      firstName: "",
+      lastName: "",
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
 
-    enterApp('member', result.data.user)
-  }, [signupForm, enterApp])
+  setAuthFeedback("Account created successfully!");
+  enterApp('member', result.data)
+  }, [accounts, signupForm, enterApp])
 
   const switchAuthMode = useCallback((mode) => {
     setAuthMode(mode)
     setAuthFeedback('')
   }, [])
 
-  const profileKey =
-    sessionType === 'member'
-      ? `member:${currentAccount?.id ?? userSettings.username.toLowerCase()}`
-      : 'guest'
-
   return {
+    // state
     hasEntered,
     sessionType,
-    profileKey,
+    profileKey: sessionType === 'member' ? `member:${userSettings.username.toLowerCase()}` : 'guest',
     userSettings,
     setUserSettings,
     authMode,
@@ -147,6 +182,7 @@ export function useAuth() {
     setLoginForm,
     signupForm,
     setSignupForm,
+    // actions
     enterApp,
     logout,
     handleLogin,
