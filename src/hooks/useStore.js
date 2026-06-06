@@ -61,6 +61,7 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
   const [equippedItems, setEquippedItems] = useState(defaultStoreState.equippedItems)
   const [storeFeedback, setStoreFeedback] = useState('')
   const [statsHydrated, setStatsHydrated] = useState(false)
+  const [hydratedAccountId, setHydratedAccountId] = useState(null)
 
   useEffect(() => {
     async function fetchStoreItems() {
@@ -92,6 +93,7 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
 
     async function hydrateStoreState() {
       setStatsHydrated(false)
+      setHydratedAccountId(null)
       setCart(defaultStoreState.cart)
       setInventory(defaultStoreState.inventory)
       setTaskExtensionCredits(defaultStoreState.taskExtensionCredits)
@@ -102,6 +104,7 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
         if (!isActive) return
         setCoins(defaultStoreState.coins)
         setXp(defaultStoreState.xp)
+        setHydratedAccountId(null)
         setStatsHydrated(true)
         return
       }
@@ -122,6 +125,7 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
       setCoins(Number(latestAccount.coins) || 0)
       setXp(Number(latestAccount.xp) || 0)
       onAccountUpdate?.(latestAccount)
+      setHydratedAccountId(latestAccount.id ?? currentAccount.id)
       setStatsHydrated(true)
     }
 
@@ -134,6 +138,7 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
 
   useEffect(() => {
     if (!statsHydrated || !currentAccount?.id) return
+    if (hydratedAccountId !== currentAccount.id) return
 
     let isCancelled = false
 
@@ -150,7 +155,7 @@ export function useStore(profileKey, currentAccount, onAccountUpdate) {
     return () => {
       isCancelled = true
     }
-  }, [statsHydrated, currentAccount?.id, coins, xp, onAccountUpdate])
+  }, [statsHydrated, hydratedAccountId, currentAccount?.id, coins, xp, onAccountUpdate])
 
   const ownedItemIds = useMemo(
     () =>
